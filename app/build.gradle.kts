@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "nl.hva.huecolors"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "nl.hva.huecolors"
@@ -66,4 +66,18 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Shade
+    implementation("com.inkapplications.shade:core:2.+")
+
+    // Palette API
+    implementation("androidx.palette:palette:1.0.0")
+
+    // Navigation
+    val navVersion = "2.7.1"
+    implementation ("androidx.navigation:navigation-compose:$navVersion")
+
+    // LiveData
+    val liveDataVersion = "1.3.0-rc01"
+    implementation ("androidx.compose.runtime:runtime-livedata:$liveDataVersion")
 }
