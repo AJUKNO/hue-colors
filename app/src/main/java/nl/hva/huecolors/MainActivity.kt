@@ -12,7 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import nl.hva.huecolors.ui.screens.Screens
+import nl.hva.huecolors.ui.screens.bridge.ScanScreen
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,10 +50,12 @@ fun HueColorsNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = /*TODO: Add home screen route*/ "",
+        startDestination = Screens.Bridge.Scan.route,
         modifier = modifier
     ) {
-
+        composable(Screens.Bridge.Scan.route) {
+            ScanScreen(navController = navController)
+        }
     }
 }
 
