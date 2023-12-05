@@ -60,10 +60,10 @@ fun HueColorsNavHost(
 }
 
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HueColorsPreview() {
-    HueColorsTheme {
+    HueColorsTheme(darkTheme = true) {
         HueColorsApp()
     }
 }
