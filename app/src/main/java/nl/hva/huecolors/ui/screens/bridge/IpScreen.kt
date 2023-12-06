@@ -102,7 +102,6 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_connect),
-                    icon = Icons.Filled.Search,
                     onClick = {
                         coroutineScope.launch {
                             //TODO: Authorize bridge

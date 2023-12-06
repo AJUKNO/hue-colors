@@ -2,7 +2,10 @@ package nl.hva.huecolors.ui.screens.bridge
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -17,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -25,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import inkapplications.shade.discover.structures.Bridge
+import inkapplications.shade.discover.structures.BridgeId
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
@@ -40,6 +46,23 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
+    )
+    val bridges = listOf(
+        Bridge(
+            id = BridgeId("ecb5fafffea4e537"),
+            localIp = "192.168.1.27",
+            port = 443
+        ),
+        Bridge(
+            id = BridgeId("ecb5fafffea4e537"),
+            localIp = "192.168.1.28",
+            port = 443
+        ),
+        Bridge(
+            id = BridgeId("ecb5fafffea4e537"),
+            localIp = "192.168.1.29",
+            port = 443
+        )
     )
 
     Scaffold(
@@ -64,15 +87,19 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HueButton(
+                    text = stringResource(id = R.string.bridge_scan),
+                    onClick = { /* TODO: Perform bridge search */ },
+                    secondary = true
+                )
+                HueButton(
                     text = stringResource(R.string.bridge_connect),
-                    icon = Icons.Filled.Search,
                     onClick = {
                         //TODO: Navigate to Interact screen navController?.navigate(Screens.Bridge.Interact.route)
                     }
                 )
             }
         }
-    ) { innerPadding -> Modifier.padding(innerPadding)
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
@@ -90,6 +117,28 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.alpha(0.7F)
             )
+
+            // Bridge List
+            bridges?.let {
+                BridgeList(bridges = it)
+            }
+        }
+    }
+}
+
+@Composable
+fun BridgeList(
+    bridges: List<Bridge>,
+) {
+    val (selectedBridge, setSelectedBridge) = remember { mutableStateOf<Bridge?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        items(bridges) { bridge ->
+            // TODO: Display BridgeItem component
         }
     }
 }
