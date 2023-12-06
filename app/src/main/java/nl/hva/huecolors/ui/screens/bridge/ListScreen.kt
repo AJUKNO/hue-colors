@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -72,7 +73,8 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack, contentDescription = stringResource(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = stringResource(
                                 R.string.navigation_back
                             ),
                             tint = MaterialTheme.colorScheme.primary,
@@ -138,9 +140,22 @@ fun BridgeList(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         items(bridges) { bridge ->
-            // TODO: Display BridgeItem component
+            BridgeListItem(bridge = bridge, isSelected = selectedBridge == bridge) {
+                setSelectedBridge(bridge)
+            }
         }
     }
+}
+
+@Composable
+fun BridgeListItem(
+    bridge: Bridge,
+    isSelected: Boolean,
+    onSelect: () -> Unit
+) {
+    RadioButton(selected = isSelected, onClick = {
+        onSelect()
+    })
 }
 
 @Preview(showBackground = true)
