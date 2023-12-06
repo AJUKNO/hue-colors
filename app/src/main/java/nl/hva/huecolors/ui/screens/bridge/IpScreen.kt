@@ -82,12 +82,13 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.padding(horizontal = 16.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack, contentDescription = "Back",
+                            imageVector = Icons.Filled.ArrowBack, contentDescription = stringResource(
+                                id = R.string.navigation_back
+                            ),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }

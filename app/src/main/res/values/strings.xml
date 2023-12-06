@@ -5,4 +5,7 @@
     <string name="bridge_connect">Connect</string>
     <string name="bridge_ip_placeholder">192.168.1.26</string>
     <string name="bridge_ip_subheading">If you are aware of your Bridge\'s IP address, kindly enter it.</string>
+    <string name="navigation_back">Back</string>
+    <string name="list_heading">Select a bridge.</string>
+    <string name="list_subheading">Please select a bridge you would like to make contact with.</string>
 </resources>
