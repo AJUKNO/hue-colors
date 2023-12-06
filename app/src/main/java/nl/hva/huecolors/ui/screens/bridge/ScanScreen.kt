@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,9 +47,16 @@ fun ScanScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HueButton(
-                    text = "Scan",
-                    icon = Icons.Filled.Search,
+                    text = stringResource(R.string.bridge_ip_address),
                     secondary = true,
+                    onClick = {
+                        navController?.navigate(Screens.Bridge.Scan.route)
+                    }
+                )
+
+                HueButton(
+                    text = stringResource(R.string.bridge_scan),
+                    icon = Icons.Filled.Search,
                     onClick = {
                         navController?.navigate(Screens.Bridge.Scan.route)
                     }
