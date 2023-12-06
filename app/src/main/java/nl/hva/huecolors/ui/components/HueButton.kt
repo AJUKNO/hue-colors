@@ -26,7 +26,8 @@ fun HueButton(
     text: String,
     icon: ImageVector? = null,
     onClick: () -> Unit?,
-    secondary: Boolean = false
+    secondary: Boolean = false,
+    disabled: Boolean = false
 ) {
     val type = if (secondary) {
         ButtonDefaults.buttonColors(
@@ -64,6 +65,7 @@ fun HueButton(
         onClick = {
             onClick()
         },
+        enabled = !disabled,
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = type,
