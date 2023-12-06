@@ -5,12 +5,14 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import inkapplications.shade.auth.structures.AppId
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.structures.SecurityStrategy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.hva.huecolors.data.Status
 import nl.hva.huecolors.data.model.Hue
+import kotlin.time.ExperimentalTime
 
 class HueViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -81,7 +83,31 @@ class HueViewModel(application: Application) : AndroidViewModel(application) {
             } finally {
                 val hue = _hue.value
                 _status.postValue(Status.Success())
-                Log.i("BRIDGES", "${hue?.bridges?.size} Bridges found: ${hue?.bridges}")
+                Log.i("HUE", "${hue?.bridges?.size} bridges found: ${hue?.bridges}")
+            }
+        }
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun authorizeBridge() {
+        withContext(Dispatchers.IO) {
+            try {
+                val hue = _hue.value
+                hue?.token =
+                    hue?.shade?.auth?.awaitToken(
+                        appId = AppId(
+                            appName = "HueColors",
+                            instanceName = "android"
+                        )
+                    )
+            } catch (error: Exception) {
+                _status.postValue(Status.Error(error.message ?: "An unknown error occurred."))
+                Log.e("HUE", error.message ?: "An unknown error occurred.")
+            } finally {
+                val hue = _hue.value
+                _status.postValue(Status.Success())
+                Log.i("HUE", "Application key: ${_hue.value?.token?.applicationKey}")
+                Log.i("HUE", "Client key: ${_hue.value?.token?.clientKey}")
             }
         }
     }
