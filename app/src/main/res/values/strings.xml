@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">HueColors</string>
+    <string name="bridge_scan">Scan</string>
+    <string name="bridge_ip_address">Connect with IP address</string>
 </resources>
