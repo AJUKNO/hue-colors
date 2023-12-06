@@ -2,4 +2,6 @@
     <string name="app_name">HueColors</string>
     <string name="bridge_scan">Scan</string>
     <string name="bridge_ip_address">Connect with IP address</string>
+    <string name="bridge_connect">Connect</string>
+    <string name="bridge_ip_placeholder">192.168.1.26</string>
 </resources>
