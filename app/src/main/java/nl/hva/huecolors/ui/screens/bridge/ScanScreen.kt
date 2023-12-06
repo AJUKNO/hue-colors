@@ -44,19 +44,6 @@ fun ScanScreen(
     )
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack, contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            )
-        },
         bottomBar = {
             Column(
                 modifier = Modifier.padding(16.dp),

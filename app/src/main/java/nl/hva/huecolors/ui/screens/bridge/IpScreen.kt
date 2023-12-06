@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +55,19 @@ fun IpScreen(navController: NavHostController? = null) {
     val (ipAddress, setIpAddress) = remember { mutableStateOf("") }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack, contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = {
             Column(
                 modifier = Modifier.padding(16.dp),
