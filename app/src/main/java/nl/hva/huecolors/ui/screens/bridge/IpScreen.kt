@@ -57,6 +57,7 @@ fun IpScreen(navController: NavHostController? = null) {
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.padding(horizontal = 16.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
