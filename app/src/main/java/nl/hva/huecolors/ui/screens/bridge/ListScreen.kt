@@ -21,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.navigation.NavHostController
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.discover.structures.BridgeId
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
@@ -54,6 +56,7 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
+    val coroutineScope = rememberCoroutineScope()
     val bridges = listOf(
         Bridge(
             id = BridgeId("ecb5fafffea4e537"),
@@ -94,10 +97,23 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val (disabled, setDisabled) = remember { mutableStateOf(false) }
+                LaunchedEffect(disabled) {
+                    delay(2000)
+                    setDisabled(false)
+                }
+
                 HueButton(
                     text = stringResource(id = R.string.bridge_scan),
-                    onClick = { /* TODO: Perform bridge search */ },
-                    secondary = true
+                    icon = Icons.Filled.Search,
+                    onClick = {
+                        coroutineScope.launch(Dispatchers.IO) {
+                            viewModel?.searchBridges()
+                        }
+                        setDisabled(true)
+                    },
+                    secondary = true,
+                    disabled
                 )
                 HueButton(
                     text = stringResource(R.string.bridge_connect),

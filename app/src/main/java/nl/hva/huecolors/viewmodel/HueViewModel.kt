@@ -50,4 +50,17 @@ class HueViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    suspend fun searchBridges() {
+        withContext(Dispatchers.IO) {
+            try {
+                val hue = _hue.value
+                hue?.bridges = hue?.shade?.onlineDiscovery?.getDevices()
+
+                Log.i("BRIDGES", "${hue?.bridges?.size} Bridges found: ${hue?.bridges}")
+            } catch (error: Exception) {
+                Log.e("HUE", error.message ?: "An unknown error occurred.")
+            }
+        }
+    }
 }
