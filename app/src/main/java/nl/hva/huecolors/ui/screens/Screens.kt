@@ -5,5 +5,7 @@ sealed class Screens(
 ) {
     object Bridge {
         object Scan: Screens("scan_screen")
+        object Ip: Screens("ip_screen")
+        object List: Screens("list_screen")
     }
 }
