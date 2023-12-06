@@ -50,7 +50,7 @@ fun ScanScreen(
                     text = stringResource(R.string.bridge_ip_address),
                     secondary = true,
                     onClick = {
-                        navController?.navigate(Screens.Bridge.Scan.route)
+                        navController?.navigate(Screens.Bridge.Ip.route)
                     }
                 )
 
