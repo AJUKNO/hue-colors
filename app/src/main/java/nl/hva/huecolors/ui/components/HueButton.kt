@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HueButton(
     text: String,
-    icon: ImageVector?,
+    icon: ImageVector? = null,
     onClick: () -> Unit?,
     secondary: Boolean = false
 ) {
