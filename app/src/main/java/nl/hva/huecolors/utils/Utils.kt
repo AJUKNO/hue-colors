@@ -17,5 +17,7 @@ class Utils {
         fun String.isNumeric(): Boolean {
             return this.all { it.isDigit() || it == ".".single() }
         }
+
+        fun formatIdentifier(id: String) = "(.{2})".toRegex().replace(id, "$1:").removeSuffix(":")
     }
 }
