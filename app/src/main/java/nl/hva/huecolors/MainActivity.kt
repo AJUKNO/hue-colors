@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +19,7 @@ import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ScanScreen
 import nl.hva.huecolors.ui.theme.HueColorsTheme
+import nl.hva.huecolors.viewmodel.HueViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +49,7 @@ fun HueColorsNavHost(
     modifier: Modifier = Modifier,
     context: Context? = null
 ) {
-    // TODO: Add viewModel initialization
+    val viewModel: HueViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -55,11 +57,11 @@ fun HueColorsNavHost(
         modifier = modifier
     ) {
         composable(Screens.Bridge.Scan.route) {
-            ScanScreen(navController = navController)
+            ScanScreen(navController = navController, viewModel)
         }
 
         composable(Screens.Bridge.Ip.route) {
-            IpScreen(navController = navController)
+            IpScreen(navController = navController, viewModel)
         }
     }
 }

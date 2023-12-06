@@ -23,9 +23,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -38,21 +41,43 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import inkapplications.shade.discover.structures.Bridge
+import inkapplications.shade.discover.structures.BridgeId
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.utils.Utils.Companion.isNumeric
+import nl.hva.huecolors.viewmodel.HueViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IpScreen(navController: NavHostController? = null) {
+fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? = null) {
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
-    val (ipAddress, setIpAddress) = remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+    val (host, setHost) = remember { mutableStateOf("") }
+
+    val setBridge = { ip: String ->
+        coroutineScope.launch {
+            viewModel?.selectBridge(Bridge(
+                id = BridgeId(""),
+                localIp = ip,
+            ))
+        }
+    }
+
+    // Debounce host input to avoid calling setBridge on each value change
+    LaunchedEffect(host) {
+        delay(500)
+        setBridge(host)
+    }
 
     Scaffold(
         topBar = {
@@ -78,6 +103,9 @@ fun IpScreen(navController: NavHostController? = null) {
                     text = stringResource(R.string.bridge_connect),
                     icon = Icons.Filled.Search,
                     onClick = {
+                        coroutineScope.launch {
+                            //TODO: Authorize bridge
+                        }
                         navController?.navigate(Screens.Bridge.Scan.route)
                     }
                 )
@@ -137,13 +165,13 @@ fun IpScreen(navController: NavHostController? = null) {
                             shape = RoundedCornerShape(24.dp)
                         )
                         .height(52.dp),
-                    value = ipAddress,
+                    value = host,
                     placeholder = {
                         Text(text = "IP Address")
                     },
                     onValueChange = {
                         if (it.isNumeric()) {
-                            setIpAddress(it)
+                            setHost(it)
                         }
                     },
                     shape = RoundedCornerShape(24.dp),

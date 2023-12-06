@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -27,21 +28,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
+import nl.hva.huecolors.viewmodel.HueViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
-    navController: NavHostController?,
+    navController: NavHostController? = null,
+    viewModel: HueViewModel? = null
 ) {
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         bottomBar = {
@@ -61,7 +67,10 @@ fun ScanScreen(
                     text = stringResource(R.string.bridge_scan),
                     icon = Icons.Filled.Search,
                     onClick = {
-                        navController?.navigate(Screens.Bridge.Scan.route)
+                        coroutineScope.launch(Dispatchers.IO) {
+                            viewModel?.init()
+                        }
+                        navController?.navigate(Screens.Bridge.List.route)
                     }
                 )
             }
@@ -113,6 +122,6 @@ fun ScanScreen(
 @Composable
 fun ScanScreenPreview() {
     HueColorsTheme(darkTheme = true) {
-        ScanScreen(navController = null)
+        ScanScreen()
     }
 }

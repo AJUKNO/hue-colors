@@ -15,7 +15,7 @@ class Utils {
         )
 
         fun String.isNumeric(): Boolean {
-            return this.all { it.isDigit() }
+            return this.all { it.isDigit() || it == ".".single() }
         }
     }
 }
