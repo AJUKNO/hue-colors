@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import nl.hva.huecolors.ui.screens.Screens
+import nl.hva.huecolors.ui.screens.bridge.InteractScreen
 import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ListScreen
 import nl.hva.huecolors.ui.screens.bridge.ScanScreen
@@ -68,6 +69,10 @@ fun HueColorsNavHost(
         composable(Screens.Bridge.List.route) {
             ListScreen(navController = navController, viewModel)
         }
+        composable(Screens.Bridge.Interact.route) {
+            InteractScreen(navController = navController, viewModel)
+        }
+
     }
 }
 

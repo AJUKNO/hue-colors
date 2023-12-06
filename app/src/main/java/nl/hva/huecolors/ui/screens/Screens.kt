@@ -7,5 +7,6 @@ sealed class Screens(
         object Scan: Screens("scan_screen")
         object Ip: Screens("ip_screen")
         object List: Screens("list_screen")
+        object Interact: Screens("interact_screen")
     }
 }
