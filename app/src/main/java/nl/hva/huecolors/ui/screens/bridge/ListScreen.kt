@@ -1,5 +1,6 @@
 package nl.hva.huecolors.ui.screens.bridge
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Status
 import nl.hva.huecolors.ui.components.HueButton
+import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.HueViewModel
@@ -63,23 +65,24 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
     )
     val coroutineScope = rememberCoroutineScope()
     val status: State<Status<Any>?>? = viewModel?.status?.observeAsState()
-    val bridges = listOf(
-        Bridge(
-            id = BridgeId("ecb5fafffea4e537"),
-            localIp = "192.168.1.27",
-            port = 443
-        ),
-        Bridge(
-            id = BridgeId("ecb5fafffea4e537"),
-            localIp = "192.168.1.28",
-            port = 443
-        ),
-        Bridge(
-            id = BridgeId("ecb5fafffea4e537"),
-            localIp = "192.168.1.29",
-            port = 443
-        )
-    )
+//    val bridges = listOf(
+//        Bridge(
+//            id = BridgeId("ecb5fafffea4e537"),
+//            localIp = "192.168.1.27",
+//            port = 443
+//        ),
+//        Bridge(
+//            id = BridgeId("ecb5fafffea4e537"),
+//            localIp = "192.168.1.28",
+//            port = 443
+//        ),
+//        Bridge(
+//            id = BridgeId("ecb5fafffea4e537"),
+//            localIp = "192.168.1.29",
+//            port = 443
+//        )
+//    )
+    val hue = viewModel?.hue?.observeAsState()
 
     Scaffold(
         topBar = {
@@ -123,8 +126,9 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 )
                 HueButton(
                     text = stringResource(R.string.bridge_connect),
+                    disabled = hue?.value?.bridges.isNullOrEmpty(),
                     onClick = {
-                        //TODO: Navigate to Interact screen navController?.navigate(Screens.Bridge.Interact.route)
+                        navController?.navigate(Screens.Bridge.Interact.route)
                     }
                 )
             }
@@ -151,7 +155,7 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
             when (status?.value) {
                 is Status.Success -> {
                     // BridgeList
-                    BridgeList(bridges = bridges, viewModel)
+                    hue?.value?.bridges?.let { BridgeList(bridges = it, viewModel) }
                 }
 
                 is Status.Loading -> {

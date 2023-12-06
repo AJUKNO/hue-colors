@@ -106,7 +106,7 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
                         coroutineScope.launch {
                             //TODO: Authorize bridge
                         }
-                        navController?.navigate(Screens.Bridge.Scan.route)
+                        navController?.navigate(Screens.Bridge.Interact.route)
                     }
                 )
             }

@@ -8,4 +8,8 @@
     <string name="navigation_back">Back</string>
     <string name="list_heading">Select a bridge.</string>
     <string name="list_subheading">Please select a bridge you would like to make contact with.</string>
+    <string name="bridge_next">Next</string>
+    <string name="interact_heading">Interact with Hue Bridge</string>
+    <string name="interact_subheading">Please press the push-link button on the bridge to create the connection.</string>
+    <string name="interact_success">Succeeded</string>
 </resources>
