@@ -27,12 +27,11 @@ fun HueButton(
     icon: ImageVector? = null,
     onClick: () -> Unit?,
     secondary: Boolean = false,
-    disabled: Boolean = false
+    disabled: Boolean? = false
 ) {
     val type = if (secondary) {
         ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.secondary
+            containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.secondary
         )
     } else {
         ButtonDefaults.buttonColors(
@@ -45,14 +44,12 @@ fun HueButton(
         Modifier
             .fillMaxWidth()
             .border(
-                width = 1.dp,
-                brush = Brush.horizontalGradient(
+                width = 1.dp, brush = Brush.horizontalGradient(
                     listOf(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                     )
-                ),
-                shape = RoundedCornerShape(24.dp)
+                ), shape = RoundedCornerShape(24.dp)
             )
             .height(52.dp)
     } else {
@@ -65,7 +62,8 @@ fun HueButton(
         onClick = {
             onClick()
         },
-        enabled = !disabled,
+
+        enabled = disabled?.not() ?: false,
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = type,
@@ -76,9 +74,7 @@ fun HueButton(
         ) {
             if (icon != null) {
                 Icon(
-                    imageVector = icon,
-                    contentDescription = text,
-                    modifier = Modifier.size(16.dp)
+                    imageVector = icon, contentDescription = text, modifier = Modifier.size(16.dp)
                 )
             }
             Text(text = text, fontWeight = FontWeight.SemiBold)
