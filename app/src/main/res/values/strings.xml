@@ -12,4 +12,8 @@
     <string name="interact_heading">Interact with Hue Bridge</string>
     <string name="interact_subheading">Please press the push-link button on the bridge to create the connection.</string>
     <string name="interact_success">Succeeded</string>
+    <string name="scan_heading">Scan Hue Bridge</string>
+    <string name="scan_subheading">Please connect your bridge to power and Ethernet. Check that you are on the same Wi-Fi network.</string>
+    <string name="bridge">Bridge</string>
+    <string name="list_no_bridges_found">No bridges found.</string>
 </resources>

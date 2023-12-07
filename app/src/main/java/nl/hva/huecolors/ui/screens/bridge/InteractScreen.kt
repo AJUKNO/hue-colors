@@ -26,15 +26,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -43,8 +43,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
-import nl.hva.huecolors.data.Status
+import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
@@ -58,11 +60,19 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
-    val status: State<Status<Any>?>? = viewModel?.status?.observeAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val token = viewModel?.hue?.value?.data?.token?.observeAsState()
+
+    LaunchedEffect(true) {
+        coroutineScope.launch(Dispatchers.Main) {
+            viewModel?.authorizeBridge()
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
@@ -79,13 +89,14 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
         },
         bottomBar = {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_next),
+                    disabled = token?.value?.data == null,
                     onClick = {
-                        navController?.navigate(Screens.Bridge.Interact.route)
+                        navController?.navigate(Screens.App.route)
                     }
                 )
             }
@@ -94,6 +105,7 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
         Column(
             modifier = Modifier
                 .padding(innerPadding)
+                .padding(horizontal = 24.dp)
                 .fillMaxHeight()
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(
@@ -142,7 +154,8 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
             }
 
             Text(
-                text = stringResource(R.string.interact_heading), style = MaterialTheme.typography.titleLarge.copy(brush),
+                text = stringResource(R.string.interact_heading),
+                style = MaterialTheme.typography.titleLarge.copy(brush),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.SemiBold
             )
@@ -156,8 +169,8 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
                     .fillMaxWidth(0.7F)
             )
 
-            when (status?.value) {
-                is Status.Success -> {
+            when (token?.value) {
+                is Resource.Success -> {
                     Icon(
                         modifier = Modifier.size(72.dp),
                         tint = MaterialTheme.colorScheme.primary,
@@ -165,7 +178,7 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
                         contentDescription = stringResource(R.string.interact_success)
                     )
                 }
-                
+
                 else -> {
                     CircularProgressIndicator(
                         modifier = Modifier.size(36.dp),

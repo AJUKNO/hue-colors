@@ -7,17 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,8 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
@@ -47,18 +41,18 @@ fun ScanScreen(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
-    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         bottomBar = {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_ip_address),
                     secondary = true,
                     onClick = {
+                        viewModel?.init()
                         navController?.navigate(Screens.Bridge.Ip.route)
                     }
                 )
@@ -67,9 +61,7 @@ fun ScanScreen(
                     text = stringResource(R.string.bridge_scan),
                     icon = Icons.Filled.Search,
                     onClick = {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            viewModel?.init()
-                        }
+                        viewModel?.init()
                         navController?.navigate(Screens.Bridge.List.route)
                     }
                 )
@@ -78,7 +70,7 @@ fun ScanScreen(
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
                 .padding(innerPadding)
                 .fillMaxHeight()
                 .fillMaxWidth(),
@@ -90,7 +82,7 @@ fun ScanScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_bridge),
-                contentDescription = "Bridge",
+                contentDescription = stringResource(R.string.bridge),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(96.dp)
@@ -100,13 +92,13 @@ fun ScanScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Text(
-                    text = "Scan Hue Bridge",
+                    text = stringResource(R.string.scan_heading),
                     style = MaterialTheme.typography.titleLarge.copy(brush),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Please connect your bridge to power and Ethernet. Check that you are on the same Wi-Fi network.",
+                    text = stringResource(R.string.scan_subheading),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     modifier = Modifier

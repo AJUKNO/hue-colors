@@ -1,6 +1,5 @@
 package nl.hva.huecolors.utils
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 

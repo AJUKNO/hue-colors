@@ -11,11 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import nl.hva.huecolors.ui.screens.Screens
+import nl.hva.huecolors.ui.screens.app.LightsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
 import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ListScreen
@@ -42,21 +45,45 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HueColorsApp() {
     val navController = rememberNavController()
-    HueColorsNavHost(navController = navController)
+    HueNavHost(navController = navController)
 }
 
 @Composable
-fun HueColorsNavHost(
+fun HueNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     context: Context? = null
 ) {
     val viewModel: HueViewModel = viewModel()
 
+    // Bridge flow
     NavHost(
         navController = navController,
-        startDestination = Screens.Bridge.Scan.route,
+        startDestination = Screens.Bridge.route,
         modifier = modifier
+    ) {
+        BridgeGraph(navController, viewModel)
+        AppGraph(navController, viewModel)
+    }
+
+//    // App
+//    if (viewModel.hue.value?.data?.token?.observeAsState()?.value?.data != null) {
+//        NavHost(
+//            navController = navController,
+//            startDestination = Screens.App.Lights.route,
+//            modifier = modifier
+//        ) {
+//            composable(Screens.App.Lights.route) {
+//                LightsScreen(navController = navController, viewModel)
+//            }
+//        }
+//    }
+}
+
+fun NavGraphBuilder.BridgeGraph(navController: NavHostController, viewModel: HueViewModel) {
+    navigation(
+        startDestination = Screens.Bridge.Scan.route,
+        route = Screens.Bridge.route
     ) {
         composable(Screens.Bridge.Scan.route) {
             ScanScreen(navController = navController, viewModel)
@@ -72,10 +99,19 @@ fun HueColorsNavHost(
         composable(Screens.Bridge.Interact.route) {
             InteractScreen(navController = navController, viewModel)
         }
-
     }
 }
 
+fun NavGraphBuilder.AppGraph(navController: NavHostController, viewModel: HueViewModel) {
+    navigation(
+        startDestination = Screens.App.Lights.route,
+        route = Screens.App.route
+    ) {
+        composable(Screens.App.Lights.route) {
+            LightsScreen(navController = navController, viewModel)
+        }
+    }
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

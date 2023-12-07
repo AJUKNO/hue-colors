@@ -2,7 +2,6 @@ package nl.hva.huecolors.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -61,7 +60,8 @@ fun HueColorsTheme(
             window.statusBarColor = colorScheme.background.toArgb()
             window.navigationBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars =
+                darkTheme
         }
     }
 

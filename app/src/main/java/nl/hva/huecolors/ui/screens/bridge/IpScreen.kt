@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,15 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -43,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.discover.structures.BridgeId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
@@ -66,10 +63,12 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
 
     val setBridge = { ip: String ->
         coroutineScope.launch {
-            viewModel?.selectBridge(Bridge(
-                id = BridgeId(""),
-                localIp = ip,
-            ))
+            viewModel?.selectBridge(
+                Bridge(
+                    id = BridgeId(""),
+                    localIp = ip,
+                )
+            )
         }
     }
 
@@ -82,11 +81,13 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController?.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack, contentDescription = stringResource(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = stringResource(
                                 id = R.string.navigation_back
                             ),
                             tint = MaterialTheme.colorScheme.primary,
@@ -97,14 +98,14 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
         },
         bottomBar = {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_connect),
                     onClick = {
-                        coroutineScope.launch {
-                            //TODO: Authorize bridge
+                        coroutineScope.launch(Dispatchers.Main) {
+                            viewModel?.authorizeBridge()
                         }
                         navController?.navigate(Screens.Bridge.Interact.route)
                     }
@@ -114,7 +115,7 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 24.dp)
                 .padding(innerPadding)
                 .fillMaxHeight()
                 .fillMaxWidth(),
@@ -153,7 +154,7 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
 
                 OutlinedTextField(
                     modifier = Modifier
-                        .fillMaxWidth(0.7F)
+                        .fillMaxWidth(1F)
                         .border(
                             width = 1.dp,
                             brush = Brush.horizontalGradient(

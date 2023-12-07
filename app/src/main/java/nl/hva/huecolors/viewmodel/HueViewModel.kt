@@ -8,107 +8,107 @@ import androidx.lifecycle.MutableLiveData
 import inkapplications.shade.auth.structures.AppId
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.structures.SecurityStrategy
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import nl.hva.huecolors.data.Status
+import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.Hue
 import kotlin.time.ExperimentalTime
 
 class HueViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var _hue: MutableLiveData<Hue> = MutableLiveData()
-    val hue: LiveData<Hue>
+    private var _hue: MutableLiveData<Resource<Hue>> = MutableLiveData()
+    val hue: LiveData<Resource<Hue>>
         get() = _hue
 
-    private var _status: MutableLiveData<Status<Any>> = MutableLiveData(Status.Empty())
-    val status: LiveData<Status<Any>>
-        get() = _status
-
-    suspend fun init() {
-        _status.postValue(Status.Loading())
-
+    fun init() {
         if (_hue.value == null) {
-            withContext(Dispatchers.IO) {
-                try {
-                    _hue.postValue(Hue())
-                } catch (error: Exception) {
-                    _status.postValue(Status.Error(error.message ?: "An unknown error occurred."))
-                    Log.e("HUE", error.message ?: "An unknown error occurred.")
-                } finally {
-                    _status.postValue(Status.Success())
-                    Log.i("HUE", "Shade successfully initialized")
-                }
+            _hue.value = Resource.Loading()
+            try {
+                _hue.value = Resource.Success(Hue())
+            } catch (error: Exception) {
+                handleHueError(error)
+                _hue.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            } finally {
+                Log.i("HUE", "Shade successfully initialized")
             }
         } else {
             Log.i("HUE", "Shade already initialized")
         }
-
-        _status.postValue(Status.Empty())
     }
 
     suspend fun selectBridge(bridge: Bridge) {
-        _status.postValue(Status.Loading())
-
-        withContext(Dispatchers.IO) {
-            try {
-                val shadeConfig = _hue.value?.shade?.configuration
-
-                shadeConfig?.setHostname(bridge.localIp)
-                shadeConfig?.setSecurityStrategy(
+        try {
+            _hue.value?.data?.shade?.value?.data?.configuration?.apply {
+                setHostname(bridge.localIp)
+                setSecurityStrategy(
                     SecurityStrategy.Insecure(
                         hostname = bridge.localIp
                     )
                 )
-            } catch (error: Exception) {
-                _status.postValue(Status.Error(error.message ?: "An unknown error occurred."))
-                Log.e("HUE", error.message ?: "An unknown error occurred.")
-            } finally {
-                _status.postValue(Status.Success())
-                Log.i("HUE", "Selected bridge: ${bridge.localIp}")
             }
+        } catch (error: Exception) {
+            handleHueError(error)
+        } finally {
+            Log.i(
+                "HUE",
+                "Selected bridge: ${_hue.value?.data?.shade?.value?.data?.configuration?.hostname?.value}"
+            )
         }
     }
 
     suspend fun searchBridges() {
-        _status.postValue(Status.Loading())
+        _hue.value?.data?.bridges?.value = Resource.Loading()
 
-        withContext(Dispatchers.IO) {
-            try {
-                val hue = _hue.value
-                hue?.bridges = hue?.shade?.onlineDiscovery?.getDevices()
-
-            } catch (error: Exception) {
-                _status.postValue(Status.Error(error.message ?: "An unknown error occurred."))
-                Log.e("HUE", error.message ?: "An unknown error occurred.")
-            } finally {
-                val hue = _hue.value
-                _status.postValue(Status.Success())
-                Log.i("HUE", "${hue?.bridges?.size} bridges found: ${hue?.bridges}")
-            }
+        try {
+            _hue.value?.data?.bridges?.value =
+                Resource.Success(_hue.value?.data?.shade?.value?.data?.onlineDiscovery?.getDevices())
+        } catch (error: Exception) {
+            handleHueError(error)
+            _hue.value?.data?.bridges?.value =
+                Resource.Error(
+                    error.message ?: "An unknown error occurred."
+                )
+        } finally {
+            logBridgesInfo()
         }
     }
 
     @OptIn(ExperimentalTime::class)
     suspend fun authorizeBridge() {
-        withContext(Dispatchers.IO) {
-            try {
-                val hue = _hue.value
-                hue?.token =
-                    hue?.shade?.auth?.awaitToken(
-                        appId = AppId(
-                            appName = "HueColors",
-                            instanceName = "android"
-                        )
+        _hue.value?.data?.token?.value = Resource.Loading()
+
+        try {
+            _hue.value?.data?.token?.value = (Resource.Success(
+                _hue.value?.data?.shade?.value?.data?.auth?.awaitToken(
+                    appId = AppId(
+                        appName = "HueColors", instanceName = "android"
                     )
-            } catch (error: Exception) {
-                _status.postValue(Status.Error(error.message ?: "An unknown error occurred."))
-                Log.e("HUE", error.message ?: "An unknown error occurred.")
-            } finally {
-                val hue = _hue.value
-                _status.postValue(Status.Success())
-                Log.i("HUE", "Application key: ${_hue.value?.token?.applicationKey}")
-                Log.i("HUE", "Client key: ${_hue.value?.token?.clientKey}")
-            }
+                )
+            ))
+        } catch (error: Exception) {
+            handleHueError(error)
+            _hue.value?.data?.token?.value =
+                Resource.Error(
+                    error.message ?: "An unknown error occurred."
+                )
+
+        } finally {
+            logTokenInfo()
         }
+    }
+
+    private fun logBridgesInfo() {
+        with(_hue.value?.data?.bridges?.value?.data) {
+            Log.i("HUE", "${this?.size ?: 0} bridges found: $this")
+        }
+    }
+
+    private fun logTokenInfo() {
+        with(_hue.value?.data?.token?.value?.data) {
+            Log.i("HUE", "Application key: ${this?.applicationKey ?: "N/A"}")
+            Log.i("HUE", "Client key: ${this?.clientKey ?: "N/A"}")
+        }
+    }
+
+    private fun handleHueError(error: Exception) {
+        Log.e("HUE", error.message ?: "An unknown error occurred.")
     }
 }
