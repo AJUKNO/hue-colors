@@ -73,10 +73,12 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 _isBridgeAuthorized.value = Resource.Success(true)
                 true
             } else {
+                _isBridgeAuthorized.value = Resource.Success(false)
                 false
             }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
+            _isBridgeAuthorized.value = Resource.Error(error.message ?: "An unknown error occurred.")
             false
         }
     }

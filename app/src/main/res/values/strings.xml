@@ -16,4 +16,6 @@
     <string name="scan_subheading">Please connect your bridge to power and Ethernet. Check that you are on the same Wi-Fi network.</string>
     <string name="bridge">Bridge</string>
     <string name="list_no_bridges_found">No bridges found.</string>
+    <string name="no_lights_found">No lights found.</string>
+    <string name="something_happened">Oh no! something happened.</string>
 </resources>

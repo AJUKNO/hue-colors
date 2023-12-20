@@ -25,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import kotlinx.coroutines.launch
+import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.NavItem
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.app.LibraryScreen
@@ -89,17 +91,17 @@ fun HueNavHost(navController: NavHostController) {
     val viewModel: BridgeViewModel = viewModel()
     val isBridgeAuthorized by viewModel.isBridgeAuthorized.observeAsState()
 
-    DisposableEffect(Unit) {
+    LaunchedEffect(Unit) {
         coroutineScope.launch {
+            viewModel.initShade()
             viewModel.isBridgeAuthorized()
         }
-        onDispose {  }
     }
 
     val startDestination =
         rememberUpdatedState(if (isBridgeAuthorized?.data == true) Screens.App.route else Screens.Bridge.route)
 
-    if (isBridgeAuthorized?.data != null) {
+    if (isBridgeAuthorized is Resource.Success) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
                 if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
