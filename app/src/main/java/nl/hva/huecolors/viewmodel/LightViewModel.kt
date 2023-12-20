@@ -225,35 +225,61 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun paletteToLights(palette: Palette?) {
         try {
+            // TODO: Fix bug, lights not updating correctly concurrently
+//            val roomLights = lightRepo.getHueLights()
+//
+//            if (palette != null) {
+//                val swatches = palette.swatches
+//
+//                coroutineScope {
+//                    val deferredList = roomLights.mapIndexed { index, light ->
+//                        async {
+//                            val swatchIndex = index % swatches.size
+//                            val swatchColor = swatches[swatchIndex].rgb
+//
+//                            shade.value?.data?.lights?.updateLight(
+//                                id = ResourceId(light.id),
+//                                parameters = LightUpdateParameters(
+//                                    color = ColorParameters(
+//                                        color = Color(swatchColor).toColormathColor()
+//                                    ),
+//                                    power = PowerParameters(
+//                                        on = true
+//                                    )
+//                                )
+//                            )
+//
+//                            light.copy(color = swatchColor, power = true)
+//                        }
+//                    }
+//
+//                    val updatedLights = deferredList.awaitAll()
+//                    lightRepo.insertOrUpdateAll(updatedLights)
+//                }
+//            }
             val roomLights = lightRepo.getHueLights()
 
             if (palette != null) {
                 val swatches = palette.swatches
 
-                coroutineScope {
-                    val deferredList = roomLights.mapIndexed { index, light ->
-                        async {
-                            val swatchIndex = index % swatches.size
-                            val swatchColor = swatches[swatchIndex].rgb
+                for ((index, light) in roomLights.withIndex()) {
+                    val swatchIndex = index % swatches.size
 
-                            shade.value?.data?.lights?.updateLight(
-                                id = ResourceId(light.id),
-                                parameters = LightUpdateParameters(
-                                    color = ColorParameters(
-                                        color = Color(swatchColor).toColormathColor()
-                                    ),
-                                    power = PowerParameters(
-                                        on = true
-                                    )
-                                )
+                    val swatchColor = swatches[swatchIndex].rgb
+
+                    shade?.value?.data?.lights?.updateLight(
+                        id = ResourceId(light.id),
+                        parameters = LightUpdateParameters(
+                            color = ColorParameters(
+                                color = Color(swatchColor).toColormathColor()
+                            ),
+                            power = PowerParameters(
+                                on = true
                             )
+                        )
+                    )
 
-                            light.copy(color = swatchColor, power = true)
-                        }
-                    }
-
-                    val updatedLights = deferredList.awaitAll()
-                    lightRepo.insertOrUpdateAll(updatedLights)
+                    lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
                 }
             }
         } catch (error: Exception) {

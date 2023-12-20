@@ -1,9 +1,11 @@
 package nl.hva.huecolors
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +44,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -53,6 +56,7 @@ import kotlinx.coroutines.launch
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.NavItem
 import nl.hva.huecolors.ui.screens.Screens
+import nl.hva.huecolors.ui.screens.app.CameraScreen
 import nl.hva.huecolors.ui.screens.app.LibraryScreen
 import nl.hva.huecolors.ui.screens.app.LightsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
@@ -135,7 +139,9 @@ fun BottomNavBar(navController: NavHostController) {
     )
     val navigateTo = { route: String ->
         navController.navigate(route) {
-            popUpTo(1)
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
         }
     }
 
@@ -273,6 +279,7 @@ inline fun <reified T : ViewModel> NavGraphBuilder.BridgeGraph(navController: Na
  *
  * @param navController The NavController used for navigation.
  */
+@RequiresApi(Build.VERSION_CODES.S)
 inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHostController) {
     navigation(
         startDestination = Screens.App.Lights.route, route = Screens.App.route
@@ -282,6 +289,9 @@ inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHo
         }
         composable(Screens.App.Library.route) {
             LibraryScreen(navController = navController, it.sharedViewModel(navController))
+        }
+        composable(Screens.App.Camera.route) {
+            CameraScreen(navController = navController, it.sharedViewModel(navController))
         }
     }
 }
