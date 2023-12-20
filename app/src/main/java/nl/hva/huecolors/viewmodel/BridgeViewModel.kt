@@ -14,7 +14,6 @@ import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.BridgeInfo
 import nl.hva.huecolors.repository.BridgeRepository
 import nl.hva.huecolors.utils.Utils
-import java.util.UUID
 import kotlin.time.ExperimentalTime
 
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {

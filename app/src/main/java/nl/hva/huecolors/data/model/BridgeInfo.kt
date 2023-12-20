@@ -3,7 +3,6 @@ package nl.hva.huecolors.data.model
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import inkapplications.shade.discover.structures.BridgeId
 
 @Entity("bridge_info")
 data class BridgeInfo(

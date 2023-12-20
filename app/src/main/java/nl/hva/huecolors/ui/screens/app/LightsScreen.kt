@@ -54,7 +54,6 @@ import nl.hva.huecolors.data.model.LightInfo
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
 import nl.hva.huecolors.ui.theme.HueColorsTheme
-import nl.hva.huecolors.viewmodel.BridgeViewModel
 import nl.hva.huecolors.viewmodel.LightViewModel
 
 @Composable
