@@ -5,13 +5,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import nl.hva.huecolors.data.model.BridgeInfo
+import nl.hva.huecolors.data.model.LightInfo
 
 @Database(
-    entities = [BridgeInfo::class], version = 1, exportSchema = false
+    entities = [BridgeInfo::class, LightInfo::class], version = 1, exportSchema = false
 )
 abstract class HueRoomDatabase : RoomDatabase() {
 
     abstract fun bridgeDao(): BridgeDao
+    abstract fun lightDao(): LightDao
+
     companion object {
         private const val DATABASE_NAME = "HUE_DATABASE"
 
