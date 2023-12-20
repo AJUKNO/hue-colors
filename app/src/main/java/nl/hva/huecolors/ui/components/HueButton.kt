@@ -25,57 +25,44 @@ import androidx.compose.ui.unit.dp
 fun HueButton(
     text: String,
     icon: ImageVector? = null,
-    onClick: () -> Unit?,
+    onClick: () -> Unit,
     secondary: Boolean = false,
     disabled: Boolean? = false
 ) {
-    val type = if (secondary) {
-        ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.secondary
-        )
-    } else {
-        ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
-    }
+    val type = ButtonDefaults.buttonColors(
+        containerColor = if (secondary) Color.Transparent else MaterialTheme.colorScheme.primary,
+        contentColor = if (secondary) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onPrimary
+    )
 
-    val modifier = if (secondary) {
-        Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp, brush = Brush.horizontalGradient(
+    val modifier = Modifier
+        .fillMaxWidth()
+        .height(52.dp)
+        .let {
+            if (secondary) it.border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
                     listOf(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
                     )
-                ), shape = RoundedCornerShape(24.dp)
-            )
-            .height(52.dp)
-    } else {
-        Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-    }
+                ),
+                shape = RoundedCornerShape(24.dp)
+            ) else it
+        }
 
     Button(
-        onClick = {
-            onClick()
-        },
-
+        onClick = onClick,
         enabled = disabled?.not() ?: false,
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
-        colors = type,
+        colors = type
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon, contentDescription = text, modifier = Modifier.size(16.dp)
-                )
+            icon?.let {
+                Icon(imageVector = it, contentDescription = text, modifier = Modifier.size(16.dp))
             }
             Text(text = text, fontWeight = FontWeight.SemiBold)
         }
