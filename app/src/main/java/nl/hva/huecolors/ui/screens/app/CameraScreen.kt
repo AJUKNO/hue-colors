@@ -122,6 +122,7 @@ fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
 
     if (Utils.checkPermissions(context, permissions)) {
         Scaffold(
+            modifier = Modifier.fillMaxSize(),
             floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
                 FloatingActionButton(

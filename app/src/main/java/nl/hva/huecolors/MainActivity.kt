@@ -106,9 +106,10 @@ fun HueNavHost(navController: NavHostController) {
     if (isBridgeAuthorized is Resource.Success) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
-                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
-                    BottomNavBar(navController)
-                }
+//                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
+//                    BottomNavBar(navController)
+//                }
+                BottomNavBar(navController)
             }, modifier = Modifier.fillMaxSize()
         ) { padding ->
             Column(
