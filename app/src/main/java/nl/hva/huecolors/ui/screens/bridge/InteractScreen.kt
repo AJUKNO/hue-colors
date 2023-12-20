@@ -1,5 +1,6 @@
 package nl.hva.huecolors.ui.screens.bridge
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -26,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -42,7 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
@@ -51,22 +55,23 @@ import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
-import nl.hva.huecolors.viewmodel.HueViewModel
+import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewModel? = null) {
-    val brush = Utils.gradient(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.secondary
-    )
+fun InteractScreen(navController: NavHostController, viewModel: BridgeViewModel) {
     val coroutineScope = rememberCoroutineScope()
-    val token = viewModel?.hue?.value?.data?.token?.observeAsState()
+    val brush = Utils.gradient(
+        MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
+    )
+    val isBridgeAuthorized by viewModel.isBridgeAuthorized.observeAsState()
 
-    LaunchedEffect(true) {
+    DisposableEffect(true) {
         coroutineScope.launch(Dispatchers.Main) {
-            viewModel?.authorizeBridge()
+            viewModel.authorizeBridge()
         }
+
+        onDispose {  }
     }
 
     Scaffold(
@@ -94,17 +99,17 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_next),
-                    disabled = token?.value?.data == null,
+                    disabled = !(isBridgeAuthorized is Resource.Success),
                     onClick = {
-                        navController?.navigate(Screens.App.route)
+                        navController.navigate(Screens.App.route)
                     }
                 )
             }
         },
-    ) { innerPadding ->
+    ) { padding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
+                .padding(padding)
                 .padding(horizontal = 24.dp)
                 .fillMaxHeight()
                 .fillMaxWidth(),
@@ -169,23 +174,26 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
                     .fillMaxWidth(0.7F)
             )
 
-            when (token?.value) {
-                is Resource.Success -> {
-                    Icon(
-                        modifier = Modifier.size(72.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = stringResource(R.string.interact_success)
-                    )
-                }
+            Crossfade(targetState = isBridgeAuthorized, label = "Bridges") { resource ->
+                when (resource) {
+                    is Resource.Success -> {
+                        Icon(
+                            modifier = Modifier.size(72.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = stringResource(R.string.interact_success)
+                        )
+                    }
 
-                else -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(36.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    else -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(36.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
+
         }
     }
 }
@@ -194,6 +202,6 @@ fun InteractScreen(navController: NavHostController? = null, viewModel: HueViewM
 @Composable
 fun InteractScreenPreview() {
     HueColorsTheme(darkTheme = true) {
-        InteractScreen()
+        InteractScreen(rememberNavController(), viewModel())
     }
 }

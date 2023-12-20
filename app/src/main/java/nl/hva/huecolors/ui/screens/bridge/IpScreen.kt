@@ -36,10 +36,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.discover.structures.BridgeId
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
@@ -48,22 +49,21 @@ import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.utils.Utils.Companion.isNumeric
-import nl.hva.huecolors.viewmodel.HueViewModel
+import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? = null) {
+fun IpScreen(navController: NavHostController, viewModel: BridgeViewModel) {
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.secondary
     )
-
     val coroutineScope = rememberCoroutineScope()
     val (host, setHost) = remember { mutableStateOf("") }
 
     val setBridge = { ip: String ->
         coroutineScope.launch {
-            viewModel?.selectBridge(
+            viewModel.selectBridge(
                 Bridge(
                     id = BridgeId(""),
                     localIp = ip,
@@ -75,7 +75,9 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
     // Debounce host input to avoid calling setBridge on each value change
     LaunchedEffect(host) {
         delay(500)
-        setBridge(host)
+        if (host.isNotEmpty()) {
+            setBridge(host)
+        }
     }
 
     Scaffold(
@@ -104,10 +106,7 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
                 HueButton(
                     text = stringResource(R.string.bridge_connect),
                     onClick = {
-                        coroutineScope.launch(Dispatchers.Main) {
-                            viewModel?.authorizeBridge()
-                        }
-                        navController?.navigate(Screens.Bridge.Interact.route)
+                        navController.navigate(Screens.Bridge.Interact.route)
                     }
                 )
             }
@@ -187,6 +186,6 @@ fun IpScreen(navController: NavHostController? = null, viewModel: HueViewModel? 
 @Composable
 fun IpScreenPreview() {
     HueColorsTheme(darkTheme = true) {
-        IpScreen(navController = null)
+        IpScreen(rememberNavController(), viewModel())
     }
 }

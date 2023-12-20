@@ -1,5 +1,6 @@
 package nl.hva.huecolors.ui.screens.bridge
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,7 +30,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -38,7 +38,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import inkapplications.shade.discover.structures.Bridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -49,40 +51,20 @@ import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
-import nl.hva.huecolors.viewmodel.HueViewModel
-
+import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel? = null) {
+fun ListScreen(navController: NavHostController, viewModel: BridgeViewModel) {
+    val coroutineScope = rememberCoroutineScope()
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
     )
-    val coroutineScope = rememberCoroutineScope()
-    var isErrorVisible by remember { mutableStateOf(false) }
-//    val bridges = listOf(
-//        Bridge(
-//            id = BridgeId("ecb5fafffea4e537"),
-//            localIp = "192.168.1.27",
-//            port = 443
-//        ),
-//        Bridge(
-//            id = BridgeId("ecb5fafffea4e537"),
-//            localIp = "192.168.1.28",
-//            port = 443
-//        ),
-//        Bridge(
-//            id = BridgeId("ecb5fafffea4e537"),
-//            localIp = "192.168.1.29",
-//            port = 443
-//        )
-//    )
-    val hue = viewModel?.hue?.observeAsState()
-    val bridges = hue?.value?.data?.bridges?.observeAsState()
+    val bridgeDiscovery by viewModel.bridgeDiscovery.observeAsState()
 
     Scaffold(topBar = {
         TopAppBar(modifier = Modifier.padding(horizontal = 8.dp), title = {}, navigationIcon = {
-            IconButton(onClick = { navController?.popBackStack() }) {
+            IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
                     contentDescription = stringResource(
@@ -107,24 +89,21 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 icon = Icons.Filled.Search,
                 onClick = {
                     coroutineScope.launch(Dispatchers.Main) {
-                        viewModel?.searchBridges()
+                        setDisabled(true)
+                        viewModel.discoverBridges()
                     }
-                    setDisabled(true)
                 },
                 secondary = true,
                 disabled
             )
-            HueButton(
-                text = stringResource(R.string.bridge_connect),
-                disabled = bridges?.value?.data?.isNullOrEmpty(),
-                onClick = {
-                    navController?.navigate(Screens.Bridge.Interact.route)
-                })
+            HueButton(text = stringResource(R.string.bridge_connect),
+                disabled = bridgeDiscovery?.data.isNullOrEmpty(),
+                onClick = { navController.navigate(Screens.Bridge.Interact.route) })
         }
-    }) { innerPadding ->
+    }) { padding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
+                .padding(padding)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -140,94 +119,47 @@ fun ListScreen(navController: NavHostController? = null, viewModel: HueViewModel
                 modifier = Modifier.alpha(0.7F)
             )
 
-            when (bridges?.value) {
-                is Resource.Success -> {
-                    // BridgeList
-                    bridges.value?.data?.let { BridgeList(bridges = it, viewModel) }
-                }
+            Crossfade(targetState = bridgeDiscovery, label = "Bridges") { resource ->
+                when (resource) {
+                    is Resource.Success -> {
+                        // BridgeList
+                        resource.data?.let {
+                            BridgeList(bridges = it) { bridge ->
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    viewModel.selectBridge(bridge)
+                                }
+                            }
+                        }
+                    }
 
-                is Resource.Loading -> {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .height(2.dp)
-                            .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+                    is Resource.Loading -> {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .height(2.dp)
+                                .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
 
-                else -> {
-                    Text(
-                        text = stringResource(R.string.list_no_bridges_found),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    else -> {
+                        Text(
+                            text = stringResource(R.string.list_no_bridges_found),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
-        }
-    }
 
-//    if (isErrorVisible) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(color = Color.Black.copy(0.7F))
-//        ) {
-//            Column(
-//                modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom
-//            ) {
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .clickable {
-//                            isErrorVisible = false
-//                        }
-//                        .background(
-//                            color = MaterialTheme.colorScheme.background,
-//                            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-//                        )
-//                ) {
-//                    Column(
-//                        modifier = Modifier.padding(24.dp),
-//                        verticalArrangement = Arrangement.spacedBy(16.dp)
-//                    ) {
-//                        Text(
-//                            text = "Oh no!",
-//                            style = MaterialTheme.typography.titleMedium.copy(
-//                                color = MaterialTheme.colorScheme.onBackground
-//                            ),
-//                            fontWeight = FontWeight.SemiBold
-//                        )
-//
-//                        Text(
-//                            text = "Something terrible happened and we're all going to die.",
-//                            style = MaterialTheme.typography.bodyMedium,
-//                        )
-//
-//                        Text(
-//                            text = "What actually happened:",
-//                            style = MaterialTheme.typography.labelSmall,
-//                            modifier = Modifier.alpha(0.7F)
-//                        )
-//
-//                        bridges?.value?.message?.let { it1 ->
-//                            Text(
-//                                text = it1,
-//                                style = MaterialTheme.typography.labelSmall,
-//                                modifier = Modifier.alpha(0.7F)
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
+        }
+
+    }
 }
 
 @Composable
 fun BridgeList(
-    bridges: List<Bridge>, viewModel: HueViewModel? = null
+    bridges: List<Bridge>, onSelect: (Bridge) -> Unit
 ) {
     val (selectedBridge, setSelectedBridge) = remember { mutableStateOf<Bridge?>(null) }
-    val coroutineScope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -235,10 +167,7 @@ fun BridgeList(
         items(bridges) { bridge ->
             BridgeListItem(bridge = bridge, isSelected = selectedBridge == bridge) {
                 setSelectedBridge(bridge)
-
-                coroutineScope.launch(Dispatchers.IO) {
-                    viewModel?.selectBridge(bridge)
-                }
+                onSelect(bridge)
             }
         }
     }
@@ -281,9 +210,7 @@ fun BridgeListItem(
                 )
             }
         }
-        RadioButton(selected = isSelected, onClick = {
-            onSelect()
-        })
+        RadioButton(selected = isSelected, onClick = onSelect)
     }
 }
 
@@ -291,6 +218,6 @@ fun BridgeListItem(
 @Composable
 fun ListScreenPreview() {
     HueColorsTheme(darkTheme = true) {
-        ListScreen()
+        ListScreen(rememberNavController(), viewModel())
     }
 }

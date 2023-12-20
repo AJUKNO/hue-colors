@@ -1,5 +1,6 @@
 package nl.hva.huecolors.utils
 
+import android.util.Log
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
@@ -12,6 +13,10 @@ class Utils {
                 second
             )
         )
+
+        fun handleError(tag: String, error: Exception) {
+            Log.e(tag, error.message ?: "An unknown error occurred.")
+        }
 
         fun String.isNumeric(): Boolean {
             return this.all { it.isDigit() || it == ".".single() }

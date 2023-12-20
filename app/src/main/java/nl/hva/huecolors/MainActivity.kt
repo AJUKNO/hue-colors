@@ -24,7 +24,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,7 +52,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.app.LightsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
@@ -58,7 +60,7 @@ import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ListScreen
 import nl.hva.huecolors.ui.screens.bridge.ScanScreen
 import nl.hva.huecolors.ui.theme.HueColorsTheme
-import nl.hva.huecolors.viewmodel.HueViewModel
+import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,15 +87,20 @@ fun HueColorsApp() {
 @Composable
 fun HueNavHost(navController: NavHostController) {
     val coroutineScope = rememberCoroutineScope()
-    val viewModel: HueViewModel = viewModel()
-    var bridgePresent by remember { mutableStateOf<Boolean?>(null) }
+    val viewModel: BridgeViewModel = viewModel()
+    val isBridgeAuthorized by viewModel.isBridgeAuthorized.observeAsState()
 
-    // TODO: Check if bridge is present
+    DisposableEffect(Unit) {
+        coroutineScope.launch {
+            viewModel.isBridgeAuthorized()
+        }
+        onDispose {  }
+    }
 
     val startDestination =
-        rememberUpdatedState(if (bridgePresent == true) Screens.App.route else Screens.Bridge.route)
+        rememberUpdatedState(if (isBridgeAuthorized?.data == true) Screens.App.route else Screens.Bridge.route)
 
-    if (bridgePresent != null) {
+    if (isBridgeAuthorized?.data != null) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
 //                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
@@ -109,8 +116,8 @@ fun HueNavHost(navController: NavHostController) {
                 NavHost(
                     navController = navController, startDestination = startDestination.value
                 ) {
-                    BridgeGraph<HueViewModel>(navController)
-                    AppGraph<HueViewModel>(navController)
+                    BridgeGraph<BridgeViewModel>(navController)
+                    AppGraph<BridgeViewModel>(navController)
                 }
             }
         }

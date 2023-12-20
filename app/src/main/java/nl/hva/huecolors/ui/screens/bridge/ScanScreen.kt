@@ -42,16 +42,15 @@ import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
-import nl.hva.huecolors.viewmodel.HueViewModel
+import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 @Composable
-fun ScanScreen(navController: NavHostController, viewModel: HueViewModel) {
+fun ScanScreen(navController: NavHostController, viewModel: BridgeViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val brush = Utils.gradient(
         MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary
     )
-
-    val hue by viewModel.hue.observeAsState()
+    val shade by viewModel.shade.observeAsState()
 
     Scaffold(bottomBar = {
         Column(
@@ -61,7 +60,7 @@ fun ScanScreen(navController: NavHostController, viewModel: HueViewModel) {
                 secondary = true,
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.init()
+                        viewModel.initShade()
                         navController.navigate(Screens.Bridge.Ip.route)
                     }
                 })
@@ -70,7 +69,7 @@ fun ScanScreen(navController: NavHostController, viewModel: HueViewModel) {
                 icon = Icons.Filled.Search,
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.init()
+                        viewModel.initShade()
                         navController.navigate(Screens.Bridge.List.route)
                     }
                 })
@@ -115,7 +114,7 @@ fun ScanScreen(navController: NavHostController, viewModel: HueViewModel) {
     }
 
     AnimatedVisibility(
-        visible = hue is Resource.Loading,
+        visible = shade is Resource.Loading,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
