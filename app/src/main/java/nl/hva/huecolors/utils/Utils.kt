@@ -1,8 +1,14 @@
 package nl.hva.huecolors.utils
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.util.Log
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.core.content.ContextCompat
+import androidx.palette.graphics.Palette
 
 class Utils {
 
@@ -23,5 +29,23 @@ class Utils {
         }
 
         fun formatIdentifier(id: String) = "(.{2})".toRegex().replace(id, "$1:").removeSuffix(":")
+
+        fun checkPermissions(
+            context: Context,
+            permissions: Array<String>
+        ): Boolean {
+            return permissions.all {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        it
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
+        }
+
+        fun getPalette(bitmap: Bitmap, maxAmount: Int): Palette? {
+            return bitmap.let { bitmap ->
+                Palette.from(bitmap).maximumColorCount(maxAmount).generate()
+            }
+        }
     }
 }

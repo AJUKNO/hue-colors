@@ -1,18 +1,30 @@
 package nl.hva.huecolors.viewmodel
 
 import android.app.Application
+import android.content.ContentUris
+import android.content.Context
+import android.net.Uri
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import androidx.palette.graphics.Palette
+import com.github.ajalt.colormath.extensions.android.composecolor.toColormathColor
 import inkapplications.shade.core.Shade
+import inkapplications.shade.lights.parameters.ColorParameters
 import inkapplications.shade.lights.parameters.LightUpdateParameters
 import inkapplications.shade.structures.AuthToken
 import inkapplications.shade.structures.ResourceId
 import inkapplications.shade.structures.SecurityStrategy
 import inkapplications.shade.structures.parameters.PowerParameters
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.LightInfo
 import nl.hva.huecolors.repository.BridgeRepository
@@ -37,6 +49,10 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
 
     val lights: LiveData<Resource<List<LightInfo>?>>
         get() = _lights
+
+    private var _images = MutableLiveData<Resource<List<Uri>?>>(Resource.Empty())
+    val images: LiveData<Resource<List<Uri>?>>
+        get() = _images
 
     suspend fun initShade() {
         if (_shade.value != null) {
@@ -145,4 +161,87 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+    fun getImagesFromMedia(context: Context) {
+        viewModelScope.launch {
+            try {
+                _images.value = Resource.Loading()
+
+                val images = withContext(Dispatchers.IO) {
+                    val imagesList = mutableListOf<Uri>()
+
+                    val projection = arrayOf(
+                        MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME
+                    )
+                    val uri: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+                    val picturesFolderPath =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/hue").path
+
+                    val selection = "${MediaStore.Images.Media.DATA} LIKE ?"
+                    val selectionArgs = arrayOf("$picturesFolderPath%")
+
+                    context.contentResolver.query(
+                        uri,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null
+                    )?.use { cursor ->
+                        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+
+                        while (cursor.moveToNext()) {
+                            val id = cursor.getLong(idColumn)
+                            val contentUri = ContentUris.withAppendedId(
+                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                            )
+                            imagesList.add(contentUri)
+                        }
+                    }
+
+                    imagesList
+                }
+
+                _images.value = Resource.Success(images)
+            } catch (error: Exception) {
+                Utils.handleError(TAG, error)
+                _images.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            }
+        }
+    }
+
+    fun clearImages() {
+        _images.value = Resource.Empty()
+    }
+
+    suspend fun paletteToLights(palette: Palette?) {
+        try {
+            val roomLights = lightRepo.getHueLights()
+
+            if (palette != null) {
+                val swatches = palette.swatches
+
+                for ((index, light) in roomLights.withIndex()) {
+                    val swatchIndex = index % swatches.size
+
+                    val swatchColor = swatches[swatchIndex].rgb
+
+                    shade?.value?.data?.lights?.updateLight(
+                        id = ResourceId(light.id),
+                        parameters = LightUpdateParameters(
+                            color = ColorParameters(
+                                color = Color(swatchColor).toColormathColor()
+                            ),
+                            power = PowerParameters(
+                                on = true
+                            )
+                        )
+                    )
+
+                    lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
+                }
+            }
+        } catch (error: Exception) {
+            Utils.handleError(TAG, error)
+        }
+    }
 }
