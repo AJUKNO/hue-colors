@@ -42,14 +42,16 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 if (isBridgeAuthorized()) {
                     val bridge = bridgeRepo.getCredentialsBridge()!!
 
-                    _shade.value = Resource.Success(Shade(
-                        hostname = bridge.hostname,
-                        authToken = AuthToken(
-                            bridge.appKey,
-                            bridge.clientKey
-                        ),
-                        securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
-                    ))
+                    _shade.value = Resource.Success(
+                        Shade(
+                            hostname = bridge.hostname,
+                            authToken = AuthToken(
+                                bridge.appKey,
+                                bridge.clientKey
+                            ),
+                            securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
+                        )
+                    )
 
                     Log.i(TAG, "Shade successfully initialized with credentials")
                 } else {
@@ -77,7 +79,8 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            _isBridgeAuthorized.value =
+                Resource.Error(error.message ?: "An unknown error occurred.")
             false
         }
     }
@@ -91,7 +94,10 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             )
 
             if (_bridgeDiscovery.value?.data != null) {
-                Log.i(TAG, "${_bridgeDiscovery.value?.data?.size} bridge(s) found: ${_bridgeDiscovery.value?.data}")
+                Log.i(
+                    TAG,
+                    "${_bridgeDiscovery.value?.data?.size} bridge(s) found: ${_bridgeDiscovery.value?.data}"
+                )
             } else {
                 Log.i(TAG, "No bridges found.")
             }
@@ -142,13 +148,16 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 )
             )
 
-            val bridgeBeingAuthorized = bridgeRepo.getBridge(_shade.value?.data?.configuration?.hostname?.value!!)
+            val bridgeBeingAuthorized =
+                bridgeRepo.getBridge(_shade.value?.data?.configuration?.hostname?.value!!)
 
             if (bridgeBeingAuthorized != null && authToken != null) {
-                bridgeRepo.insertOrUpdate(bridgeBeingAuthorized.copy(
-                    appKey = authToken.applicationKey,
-                    clientKey = authToken.clientKey!!
-                ))
+                bridgeRepo.insertOrUpdate(
+                    bridgeBeingAuthorized.copy(
+                        appKey = authToken.applicationKey,
+                        clientKey = authToken.clientKey!!
+                    )
+                )
             }
 
             isBridgeAuthorized.value = Resource.Success()
@@ -156,7 +165,8 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             Log.i(TAG, "Successfully authorized bridge")
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            _isBridgeAuthorized.value =
+                Resource.Error(error.message ?: "An unknown error occurred.")
         }
     }
 }

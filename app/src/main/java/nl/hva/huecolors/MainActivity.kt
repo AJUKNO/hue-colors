@@ -128,10 +128,10 @@ fun HueNavHost(navController: NavHostController) {
 fun BottomNavBar(navController: NavHostController) {
     val navEntry by navController.currentBackStackEntryAsState()
     val navigationItems = listOf(
-        NavItem(Screens.App.Library,R.drawable.ic_folder,"Library"),
-        NavItem(Screens.App.Lights,R.drawable.ic_bulb,"Lights"),
-        NavItem(Screens.App.Camera,R.drawable.ic_settings,"Settings"),
-        NavItem(Screens.App.Camera,R.drawable.ic_camera,"Camera"),
+        NavItem(Screens.App.Library, R.drawable.ic_folder, "Library"),
+        NavItem(Screens.App.Lights, R.drawable.ic_bulb, "Lights"),
+        NavItem(Screens.App.Camera, R.drawable.ic_settings, "Settings"),
+        NavItem(Screens.App.Camera, R.drawable.ic_camera, "Camera"),
     )
     val navigateTo = { route: String ->
         navController.navigate(route) {

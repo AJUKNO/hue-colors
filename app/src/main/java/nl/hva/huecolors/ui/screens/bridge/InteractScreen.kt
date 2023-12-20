@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -70,7 +70,7 @@ fun InteractScreen(navController: NavHostController, viewModel: BridgeViewModel)
             viewModel.authorizeBridge()
         }
 
-        onDispose {  }
+        onDispose { }
     }
 
     Scaffold(
@@ -79,9 +79,9 @@ fun InteractScreen(navController: NavHostController, viewModel: BridgeViewModel)
                 modifier = Modifier.padding(horizontal = 8.dp),
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(
                                 R.string.navigation_back
                             ),

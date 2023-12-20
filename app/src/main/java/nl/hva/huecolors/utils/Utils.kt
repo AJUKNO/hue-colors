@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.util.Log
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
@@ -35,14 +34,14 @@ class Utils {
             permissions: Array<String>
         ): Boolean {
             return permissions.all {
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        it
-                    ) == PackageManager.PERMISSION_GRANTED
-                }
+                ContextCompat.checkSelfPermission(
+                    context,
+                    it
+                ) == PackageManager.PERMISSION_GRANTED
+            }
         }
 
-        fun getPalette(bitmap: Bitmap, maxAmount: Int): Palette? {
+        fun getPalette(bitmap: Bitmap, maxAmount: Int): Palette {
             return bitmap.let { bitmap ->
                 Palette.from(bitmap).maximumColorCount(maxAmount).generate()
             }

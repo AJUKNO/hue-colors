@@ -31,7 +31,7 @@ import nl.hva.huecolors.repository.BridgeRepository
 import nl.hva.huecolors.repository.LightRepository
 import nl.hva.huecolors.utils.Utils
 
-class LightViewModel(application: Application): AndroidViewModel(application) {
+class LightViewModel(application: Application) : AndroidViewModel(application) {
 
     private val TAG = "LIGHTS_MODEL"
     private val lightRepo = LightRepository(application.applicationContext)
@@ -64,13 +64,13 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
 
                     _shade.value = Resource.Success(
                         Shade(
-                        hostname = bridge.hostname,
-                        authToken = AuthToken(
-                            bridge.appKey,
-                            bridge.clientKey
-                        ),
-                        securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
-                    )
+                            hostname = bridge.hostname,
+                            authToken = AuthToken(
+                                bridge.appKey,
+                                bridge.clientKey
+                            ),
+                            securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
+                        )
                     )
 
                     Log.i(TAG, "Shade successfully initialized with credentials")
@@ -99,7 +99,8 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
             }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            _isBridgeAuthorized.value =
+                Resource.Error(error.message ?: "An unknown error occurred.")
             false
         }
     }
@@ -111,31 +112,37 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
             val roomLights = lightRepo.getLights()
 
             if (roomLights.isEmpty()) {
-                val hueLights = _shade?.value?.data?.lights?.listLights()
+                val hueLights = _shade.value?.data?.lights?.listLights()
 
                 if (hueLights != null) {
                     for (light in hueLights) {
-                        lightRepo.insertOrUpdate(LightInfo(
-                            color = if (light.colorInfo != null) Color(android.graphics.Color.parseColor(
-                                light.colorInfo?.color?.toSRGB()?.toHex(true)
-                            )).toArgb() else null,
-                            id = light.id.value,
-                            label = "Lamp ${light.v1Id.toString().split("/")[2]}",
-                            owner = light.owner.id.value,
-                            power = light.powerInfo.on,
-                            v1Id = light.v1Id ?: "Lamp",
-                            isHue = light.colorInfo != null
-                        ))
+                        lightRepo.insertOrUpdate(
+                            LightInfo(
+                                color = if (light.colorInfo != null) Color(
+                                    android.graphics.Color.parseColor(
+                                        light.colorInfo?.color?.toSRGB()?.toHex(true)
+                                    )
+                                ).toArgb() else null,
+                                id = light.id.value,
+                                label = "Lamp ${light.v1Id.toString().split("/")[2]}",
+                                owner = light.owner.id.value,
+                                power = light.powerInfo.on,
+                                v1Id = light.v1Id ?: "Lamp",
+                                isHue = light.colorInfo != null
+                            )
+                        )
                     }
                 }
 
             }
 
             for (light in roomLights) {
-                val hueLight = _shade?.value?.data?.lights?.getLight(ResourceId(light.id))
-                val color = if (hueLight?.colorInfo != null) Color(android.graphics.Color.parseColor(
-                    hueLight.colorInfo?.color?.toSRGB()?.toHex(true)
-                )).toArgb() else null
+                val hueLight = _shade.value?.data?.lights?.getLight(ResourceId(light.id))
+                val color = if (hueLight?.colorInfo != null) Color(
+                    android.graphics.Color.parseColor(
+                        hueLight.colorInfo?.color?.toSRGB()?.toHex(true)
+                    )
+                ).toArgb() else null
                 val powerState = hueLight?.powerInfo?.on ?: false
 
                 lightRepo.insertOrUpdate(light.copy(color = color, power = powerState))
@@ -150,7 +157,7 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
 
     suspend fun toggleLight(id: String, power: Boolean) {
         try {
-            shade?.value?.data?.lights?.updateLight(
+            shade.value?.data?.lights?.updateLight(
                 id = ResourceId(id),
                 parameters = LightUpdateParameters(
                     power = PowerParameters(power)
@@ -225,7 +232,7 @@ class LightViewModel(application: Application): AndroidViewModel(application) {
 
                     val swatchColor = swatches[swatchIndex].rgb
 
-                    shade?.value?.data?.lights?.updateLight(
+                    shade.value?.data?.lights?.updateLight(
                         id = ResourceId(light.id),
                         parameters = LightUpdateParameters(
                             color = ColorParameters(
