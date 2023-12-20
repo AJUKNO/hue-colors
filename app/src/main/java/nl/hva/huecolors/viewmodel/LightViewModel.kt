@@ -185,7 +185,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                     val uri: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
                     val picturesFolderPath =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/hue").path
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/palette").path
 
                     val selection = "${MediaStore.Images.Media.DATA} LIKE ?"
                     val selectionArgs = arrayOf("$picturesFolderPath%")

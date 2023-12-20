@@ -56,6 +56,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -69,6 +70,7 @@ import coil.size.Scale
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.ui.components.HueButton
+import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.CameraViewModel
 import nl.hva.huecolors.viewmodel.LightViewModel
@@ -78,7 +80,9 @@ import nl.hva.huecolors.viewmodel.LightViewModel
 @Composable
 fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
     val coroutineScope = rememberCoroutineScope()
-    val permissions = arrayOf(Manifest.permission.CAMERA)
+    val permissions = arrayOf(
+        Manifest.permission.CAMERA
+    )
     val lightViewModel: LightViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -176,8 +180,18 @@ fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
                     if (!sheetState.isVisible) {
                         showBottomSheet = false
                     }
-
-
+                }
+            },
+            onSaveApply = { palette ->
+                coroutineScope.launch {
+                    lightViewModel.initShade()
+                    lightViewModel.paletteToLights(palette)
+                    viewModel.saveToStorage(capturedImage, context)
+                    sheetState.hide()
+                }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        showBottomSheet = false
+                    }
                 }
             },
             isVisible = showBottomSheet,
@@ -194,6 +208,7 @@ fun CameraDrawer(
     onDismiss: () -> Unit,
     image: Bitmap?,
     onApply: (Palette?) -> Unit,
+    onSaveApply: (Palette?) -> Unit,
     isVisible: Boolean,
     sheetState: SheetState,
     context: Context
@@ -242,6 +257,9 @@ fun CameraDrawer(
                         )
                     }
                 }
+                HueButton(text = "Save and Apply",
+                    secondary = true,
+                    onClick = { onSaveApply(palette) })
                 HueButton(text = "Apply", onClick = { onApply(palette) })
             }
         }
