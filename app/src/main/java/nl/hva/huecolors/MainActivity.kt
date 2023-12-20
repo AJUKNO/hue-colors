@@ -27,11 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -53,7 +51,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import kotlinx.coroutines.launch
+import nl.hva.huecolors.data.model.NavItem
 import nl.hva.huecolors.ui.screens.Screens
+import nl.hva.huecolors.ui.screens.app.LibraryScreen
 import nl.hva.huecolors.ui.screens.app.LightsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
 import nl.hva.huecolors.ui.screens.bridge.IpScreen
@@ -83,7 +83,6 @@ fun HueColorsApp() {
     HueNavHost(navController)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HueNavHost(navController: NavHostController) {
     val coroutineScope = rememberCoroutineScope()
@@ -103,9 +102,9 @@ fun HueNavHost(navController: NavHostController) {
     if (isBridgeAuthorized?.data != null) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
-//                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
-//                    BottomNavBar(null, navController)
-//                }
+                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
+                    BottomNavBar(navController)
+                }
             }, modifier = Modifier.fillMaxSize()
         ) { padding ->
             Column(
@@ -124,9 +123,21 @@ fun HueNavHost(navController: NavHostController) {
     }
 }
 
+@SuppressLint("ResourceType")
 @Composable
 fun BottomNavBar(navController: NavHostController) {
     val navEntry by navController.currentBackStackEntryAsState()
+    val navigationItems = listOf(
+        NavItem(Screens.App.Library,R.drawable.ic_folder,"Library"),
+        NavItem(Screens.App.Lights,R.drawable.ic_bulb,"Lights"),
+        NavItem(Screens.App.Camera,R.drawable.ic_settings,"Settings"),
+        NavItem(Screens.App.Camera,R.drawable.ic_camera,"Camera"),
+    )
+    val navigateTo = { route: String ->
+        navController.navigate(route) {
+            popUpTo(1)
+        }
+    }
 
     NavigationBar(
         modifier = Modifier
@@ -149,41 +160,16 @@ fun BottomNavBar(navController: NavHostController) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-//            BottomNavBarItem(
-//                active = navEntry?.destination?.route == Screens.App.Library.route,
-//                painter = R.drawable.ic_folder,
-//                label = "Library",
-//                navController = navController,
-//                route = Screens.App.Library,
-//                modifier = Modifier.weight(1 / 4F)
-//            )
-//
-//            BottomNavBarItem(
-//                active = navEntry?.destination?.route == Screens.App.Lights.route,
-//                painter = R.drawable.ic_bulb,
-//                label = "Lights",
-//                navController = navController,
-//                route = Screens.App.Lights,
-//                modifier = Modifier.weight(1 / 4F)
-//            )
-//
-//            BottomNavBarItem(
-//                active = navEntry?.destination?.route == Screens.App.Camera.route,
-//                painter = R.drawable.ic_settings,
-//                label = "Settings",
-//                navController = navController,
-//                route = Screens.App.Camera,
-//                modifier = Modifier.weight(1 / 4F)
-//            )
-//
-//            BottomNavBarItem(
-//                active = navEntry?.destination?.route == Screens.App.Camera.route,
-//                painter = R.drawable.ic_camera,
-//                label = "Camera",
-//                navController = navController,
-//                route = Screens.App.Camera,
-//                modifier = Modifier.weight(1 / 4F)
-//            )
+            navigationItems.forEach { item ->
+                BottomNavBarItem(
+                    active = navEntry?.destination?.route == item.route.route,
+                    painter = item.painter,
+                    label = item.label,
+                    modifier = Modifier.weight(1 / 4F)
+                ) {
+                    navigateTo(item.route.route)
+                }
+            }
         }
     }
 }
@@ -197,23 +183,17 @@ fun BottomNavBar(navController: NavHostController) {
  * @param onClick An optional lambda function to run when the item is clicked.
  * @param modifier Modifier for customization of the item's appearance.
  */
-@SuppressLint("ResourceType")
 @Composable
 fun BottomNavBarItem(
     active: Boolean,
     painter: Int,
     label: String,
+    modifier: Modifier,
     onClick: () -> Unit,
-    modifier: Modifier
 ) {
     val alpha by animateFloatAsState(targetValue = if (active) 1F else 0F, label = "")
 
     Button(
-//        onClick = {
-//            navController.navigate(route.route) {
-//                popUpTo(1)
-//            }
-//        },
         onClick = onClick,
         modifier = modifier,
         contentPadding = PaddingValues(0.dp),
@@ -299,6 +279,9 @@ inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHo
     ) {
         composable(Screens.App.Lights.route) {
             LightsScreen(navController = navController, it.sharedViewModel(navController))
+        }
+        composable(Screens.App.Library.route) {
+            LibraryScreen(navController = navController, it.sharedViewModel(navController))
         }
     }
 }
