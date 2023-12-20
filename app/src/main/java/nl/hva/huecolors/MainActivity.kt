@@ -24,7 +24,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +51,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.app.LightsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
@@ -68,8 +66,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             HueColorsTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
                     HueColorsApp()
                 }
@@ -98,18 +95,19 @@ fun HueNavHost(navController: NavHostController) {
 
     if (bridgePresent != null) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.surface,
-            bottomBar = {
+            containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
 //                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
 //                    BottomNavBar(null, navController)
 //                }
-            },
-            modifier = Modifier.fillMaxSize()
+            }, modifier = Modifier.fillMaxSize()
         ) { padding ->
-            Column(Modifier.padding(padding).fillMaxSize()) {
+            Column(
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+            ) {
                 NavHost(
-                    navController = navController,
-                    startDestination = startDestination.value
+                    navController = navController, startDestination = startDestination.value
                 ) {
                     BridgeGraph<HueViewModel>(navController)
                     AppGraph<HueViewModel>(navController)
@@ -120,18 +118,19 @@ fun HueNavHost(navController: NavHostController) {
 }
 
 @Composable
-fun BottomNavBar(lambda: (() -> Job)?, navController: NavHostController) {
+fun BottomNavBar(navController: NavHostController) {
     val navEntry by navController.currentBackStackEntryAsState()
 
     NavigationBar(
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                listOf(
-                    Color(0xFF0F0F0F),
-                    MaterialTheme.colorScheme.scrim
+        modifier = Modifier
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0F0F0F), MaterialTheme.colorScheme.scrim
+                    )
                 )
             )
-        ).height(80.dp),
+            .height(80.dp),
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         tonalElevation = 16.dp,
@@ -182,15 +181,33 @@ fun BottomNavBar(lambda: (() -> Job)?, navController: NavHostController) {
     }
 }
 
+/**
+ * Displays a bottom navigation bar item with an icon and label
+ *
+ * @param active Determines whether the item is currently active.
+ * @param painter The resource ID of the icon to be displayed.
+ * @param label The text label for the item.
+ * @param onClick An optional lambda function to run when the item is clicked.
+ * @param modifier Modifier for customization of the item's appearance.
+ */
 @SuppressLint("ResourceType")
 @Composable
-fun BottomNavBarItem(active: Boolean, painter: Int, label: String, navController: NavHostController, route: Screens, modifier: Modifier) {
+fun BottomNavBarItem(
+    active: Boolean,
+    painter: Int,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier
+) {
     val alpha by animateFloatAsState(targetValue = if (active) 1F else 0F, label = "")
 
     Button(
-        onClick = { navController.navigate(route.route) {
-            popUpTo(1)
-        } },
+//        onClick = {
+//            navController.navigate(route.route) {
+//                popUpTo(1)
+//            }
+//        },
+        onClick = onClick,
         modifier = modifier,
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(
@@ -199,8 +216,7 @@ fun BottomNavBarItem(active: Boolean, painter: Int, label: String, navController
         )
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(4.dp)
+            horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(4.dp)
         ) {
             Icon(
                 modifier = Modifier
@@ -223,6 +239,12 @@ fun BottomNavBarItem(active: Boolean, painter: Int, label: String, navController
     }
 }
 
+/**
+ * Gets a shared ViewModel of type T associated with the parent route / nav entry
+ *
+ * @param navController The NavController used for navigation.
+ * @return Shared ViewModel of type T
+ */
 @Composable
 inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navController: NavController): T {
     val navGraphRoute = destination.parent?.route ?: return viewModel()
@@ -233,10 +255,14 @@ inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navControll
     return viewModel(parentEntry)
 }
 
+/**
+ * Sets up a navigation graph for the Bridge flow screens.
+ *
+ * @param navController The NavController used for navigation.
+ */
 inline fun <reified T : ViewModel> NavGraphBuilder.BridgeGraph(navController: NavHostController) {
     navigation(
-        startDestination = Screens.Bridge.Scan.route,
-        route = Screens.Bridge.route
+        startDestination = Screens.Bridge.Scan.route, route = Screens.Bridge.route
     ) {
         composable(Screens.Bridge.Scan.route) {
             ScanScreen(navController = navController, it.sharedViewModel(navController))
@@ -255,10 +281,14 @@ inline fun <reified T : ViewModel> NavGraphBuilder.BridgeGraph(navController: Na
     }
 }
 
+/**
+ * Sets up a navigation graph for the App flow screens.
+ *
+ * @param navController The NavController used for navigation.
+ */
 inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHostController) {
     navigation(
-        startDestination = Screens.App.Lights.route,
-        route = Screens.App.route
+        startDestination = Screens.App.Lights.route, route = Screens.App.route
     ) {
         composable(Screens.App.Lights.route) {
             LightsScreen(navController = navController, it.sharedViewModel(navController))
@@ -278,6 +308,6 @@ fun HueColorsPreview() {
 @Composable
 fun BottomNavBarPreview() {
     HueColorsTheme(darkTheme = true) {
-        BottomNavBar(null, rememberNavController())
+        BottomNavBar(rememberNavController())
     }
 }
