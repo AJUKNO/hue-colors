@@ -23,6 +23,9 @@ import inkapplications.shade.structures.ResourceId
 import inkapplications.shade.structures.SecurityStrategy
 import inkapplications.shade.structures.parameters.PowerParameters
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.hva.huecolors.data.Resource
@@ -227,24 +230,30 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
             if (palette != null) {
                 val swatches = palette.swatches
 
-                for ((index, light) in roomLights.withIndex()) {
-                    val swatchIndex = index % swatches.size
+                coroutineScope {
+                    val deferredList = roomLights.mapIndexed { index, light ->
+                        async {
+                            val swatchIndex = index % swatches.size
+                            val swatchColor = swatches[swatchIndex].rgb
 
-                    val swatchColor = swatches[swatchIndex].rgb
-
-                    shade.value?.data?.lights?.updateLight(
-                        id = ResourceId(light.id),
-                        parameters = LightUpdateParameters(
-                            color = ColorParameters(
-                                color = Color(swatchColor).toColormathColor()
-                            ),
-                            power = PowerParameters(
-                                on = true
+                            shade.value?.data?.lights?.updateLight(
+                                id = ResourceId(light.id),
+                                parameters = LightUpdateParameters(
+                                    color = ColorParameters(
+                                        color = Color(swatchColor).toColormathColor()
+                                    ),
+                                    power = PowerParameters(
+                                        on = true
+                                    )
+                                )
                             )
-                        )
-                    )
 
-                    lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
+                            light.copy(color = swatchColor, power = true)
+                        }
+                    }
+
+                    val updatedLights = deferredList.awaitAll()
+                    lightRepo.insertOrUpdateAll(updatedLights)
                 }
             }
         } catch (error: Exception) {

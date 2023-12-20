@@ -31,7 +31,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +47,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
@@ -65,6 +68,8 @@ import nl.hva.huecolors.viewmodel.LightViewModel
 @Composable
 fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val images by viewModel.images.observeAsState()
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by rememberSaveable {
@@ -85,20 +90,24 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
         }
     }
 
-    DisposableEffect(Unit) {
-        val isGranted =
-            Utils.checkPermissions(context, arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+    LaunchedEffect(lifecycleState) {
+        when (lifecycleState) {
+            Lifecycle.State.RESUMED -> {
+                val isGranted =
+                    Utils.checkPermissions(context, arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
 
-        if (isGranted) {
-            coroutineScope.launch {
-                viewModel.getImagesFromMedia(context)
+                if (isGranted) {
+                    coroutineScope.launch {
+                        viewModel.getImagesFromMedia(context)
+                    }
+                } else {
+                    launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+                }
             }
-        } else {
-            launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
-        }
-
-        onDispose {
-            viewModel.clearImages()
+            Lifecycle.State.DESTROYED -> {
+                viewModel.clearImages()
+            }
+            else -> {}
         }
     }
 

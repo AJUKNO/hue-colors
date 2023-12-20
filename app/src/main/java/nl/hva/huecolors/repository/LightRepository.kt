@@ -1,6 +1,9 @@
 package nl.hva.huecolors.repository
 
 import android.content.Context
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import nl.hva.huecolors.data.model.LightInfo
 import nl.hva.huecolors.db.HueRoomDatabase
 import nl.hva.huecolors.db.LightDao
@@ -37,6 +40,18 @@ class LightRepository(context: Context) {
             )
 
             lightDao.insertOrUpdate(updated)
+        }
+    }
+
+    suspend fun insertOrUpdateAll(updatedLights: List<LightInfo>) {
+        coroutineScope {
+            val deferredList = updatedLights.map { light ->
+                async {
+                    insertOrUpdate(light)
+                }
+            }
+
+            deferredList.awaitAll()
         }
     }
 }
