@@ -4,26 +4,17 @@ import android.app.Application
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import nl.hva.huecolors.R
-import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.utils.Utils
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class CameraViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -40,30 +31,25 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         if (bitmap != null) {
             viewModelScope.launch {
                 try {
-                    val hueFolderName = "palette"
-                    val picturesFolderPath =
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES+"/${hueFolderName}").path
+                    val hueFolder = "palette"
                     val fileName = "IMG_${System.currentTimeMillis()}.jpg"
-                    val hueFolderPath = File(picturesFolderPath)
-                    val filePath = "${hueFolderPath.path}/$fileName"
+                    val relativeLocation =
+                        Environment.DIRECTORY_PICTURES + File.separator + hueFolder
+                    val filePath = File(relativeLocation)
 
-                    Log.i(TAG, hueFolderPath.path)
-                    Log.i(TAG, filePath)
-
-                    if (!hueFolderPath.exists()) {
-                        hueFolderPath.mkdirs()
-                    } else {
-                        Log.i(TAG, "EXISTS")
+                    if (!filePath.exists()) {
+                        filePath.mkdirs()
                     }
 
                     val contentValues = ContentValues().apply {
-                        put(MediaStore.Images.Media.DATA, filePath)
+                        put(MediaStore.Images.Media.RELATIVE_PATH, relativeLocation)
                         put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
                         put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
                     }
 
                     val resolver = context.contentResolver
-                    val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    val imageUri =
+                        resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 
                     imageUri?.let {
                         try {
