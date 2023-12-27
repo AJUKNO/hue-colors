@@ -59,6 +59,7 @@ import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.app.CameraScreen
 import nl.hva.huecolors.ui.screens.app.LibraryScreen
 import nl.hva.huecolors.ui.screens.app.LightsScreen
+import nl.hva.huecolors.ui.screens.app.SettingsScreen
 import nl.hva.huecolors.ui.screens.bridge.InteractScreen
 import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ListScreen
@@ -135,14 +136,15 @@ fun BottomNavBar(navController: NavHostController) {
     val navigationItems = listOf(
         NavItem(Screens.App.Library, R.drawable.ic_folder, "Library"),
         NavItem(Screens.App.Lights, R.drawable.ic_bulb, "Lights"),
-        NavItem(Screens.App.Camera, R.drawable.ic_settings, "Settings"),
+        NavItem(Screens.App.Settings, R.drawable.ic_settings, "Settings"),
         NavItem(Screens.App.Camera, R.drawable.ic_camera, "Camera"),
     )
     val navigateTo = { route: String ->
         navController.navigate(route) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-            }
+//            popUpTo(navController.graph.findStartDestination().id) {
+//                saveState = true
+//            }
+            popUpTo(0)
         }
     }
 
@@ -290,6 +292,9 @@ inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHo
         }
         composable(Screens.App.Library.route) {
             LibraryScreen(navController = navController, it.sharedViewModel(navController))
+        }
+        composable(Screens.App.Settings.route) {
+            SettingsScreen(navController = navController, it.sharedViewModel(navController))
         }
         composable(Screens.App.Camera.route) {
             CameraScreen(navController = navController, it.sharedViewModel(navController))
