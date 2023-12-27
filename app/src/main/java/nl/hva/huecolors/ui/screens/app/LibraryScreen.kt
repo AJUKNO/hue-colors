@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,9 +30,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavHostController
@@ -60,6 +64,8 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Scale
 import kotlinx.coroutines.launch
+import nl.hva.huecolors.R
+import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
@@ -132,17 +138,40 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
                         body = "The Library lets you extract vibrant color palettes from your phone's images and applies them to Philips Hue lights, instantly transforming your space into a personalized and dynamic environment."
                     )
                 }
-                if (images?.data != null) {
-                    items(images?.data!!) { image ->
-                        ImageItem(
-                            context = context,
-                            image = image
-                        ) {
-                            showBottomSheet = true
-                            selectedImage = image
+                when (images) {
+                    is Resource.Success -> {
+                        items(images?.data!!, key = { it }) { image ->
+                            ImageItem(
+                                context = context,
+                                image = image
+                            ) {
+                                showBottomSheet = true
+                                selectedImage = image
+                            }
+                        }
+                    }
+
+                    is Resource.Error -> {
+                        item(span = { GridItemSpan(2) }) {
+                            Text(
+                                text = stringResource(R.string.something_happened),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    else -> {
+                        item(span = { GridItemSpan(2) }) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .height(2.dp)
+                                    .fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
                     }
                 }
+                item(span = { GridItemSpan(2) }) { }
             })
 
     }
