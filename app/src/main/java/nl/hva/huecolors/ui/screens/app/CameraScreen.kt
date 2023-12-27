@@ -13,11 +13,14 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -220,26 +223,29 @@ fun CameraDrawer(
             onDismissRequest = onDismiss, sheetState = sheetState
         ) {
             Column(
-                modifier = Modifier.padding(48.dp),
-                verticalArrangement = Arrangement.spacedBy(48.dp)
+                modifier = Modifier.padding(24.dp)
             ) {
-                AsyncImage(
-                    modifier = Modifier
-                        .aspectRatio(1F / 1.3F)
-                        .clip(shape = RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                    model = ImageRequest.Builder(context)
-                        .data(image)
-                        .crossfade(true)
-                        .scale(Scale.FIT)
-                        .size(500, 500)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .build(),
-                    contentDescription = "Test"
-                )
+//                AsyncImage(
+//                    modifier = Modifier
+//                        .aspectRatio(1F / 1F)
+//                        .clip(shape = RoundedCornerShape(8.dp)),
+//                    contentScale = ContentScale.Crop,
+//                    alignment = Alignment.Center,
+//                    model = ImageRequest.Builder(context)
+//                        .data(image)
+//                        .crossfade(true)
+//                        .scale(Scale.FIT)
+//                        .size(500, 500)
+//                        .memoryCachePolicy(CachePolicy.ENABLED)
+//                        .build(),
+//                    contentDescription = "Test"
+//                )
+
+//                Spacer(modifier = Modifier.size(48.dp))
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     palette?.swatches?.forEach { color ->
@@ -251,16 +257,29 @@ fun CameraDrawer(
                                     shape = CircleShape,
                                     clip = true
                                 )
-                                .height(40.dp)
-                                .width(40.dp)
+                                .border(
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.inverseSurface
+                                    ),
+                                    shape = CircleShape
+                                )
+                                .height(36.dp)
+                                .width(36.dp)
                                 .clip(CircleShape)
                                 .background(color = Color(color.rgb))
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.size(48.dp))
+
                 HueButton(text = "Save and Apply",
                     secondary = true,
                     onClick = { onSaveApply(palette) })
+
+                Spacer(modifier = Modifier.size(8.dp))
+
                 HueButton(text = "Apply", onClick = { onApply(palette) })
             }
         }
