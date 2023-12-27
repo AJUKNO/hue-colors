@@ -21,6 +21,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * Hue button
+ *
+ * @param text Label to display on the button
+ * @param icon Optional icon to display on the button
+ * @param onClick Called when the button is clicked
+ * @param secondary Secondary button styling
+ * @param disabled Controls the state of the button
+ */
 @Composable
 fun HueButton(
     text: String,
