@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,51 +81,54 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
     }
 
     Column(
-        modifier = Modifier
-            .verticalScroll(rememberScrollState())
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
+                .verticalScroll(rememberScrollState())
         ) {
-            Row(
-                horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
             ) {
-                Switch(colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.surface,
-                    checkedTrackColor = MaterialTheme.colorScheme.onSurface,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.onSurface,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.onSurface
-                ), checked = true, onCheckedChange = {
+                Row(
+                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
+                ) {
+                    Switch(colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.surface,
+                        checkedTrackColor = MaterialTheme.colorScheme.onSurface,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurface,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.onSurface
+                    ), checked = true, onCheckedChange = {
 
+                    })
+                }
+
+                HueHeader("Home")
+
+                Spacer(modifier = Modifier.size(48.dp))
+
+                HueInfoCard(
+                    headline = "What is this?",
+                    body = "Extract vibrant color palettes from your photos and watch as Philips Hue lights bring them to life, transforming your space into a personalized, dynamic environment with a touch of your fingertips."
+                )
+
+                Spacer(modifier = Modifier.size(48.dp))
+
+                LightList(lights = lights, updateLight = { id, power ->
+                    coroutineScope.launch {
+                        viewModel.toggleLight(id, power)
+                    }
+                }, identifyLight = { id ->
+                    coroutineScope.launch {
+                        viewModel.identifyLight(id)
+                    }
                 })
+
+                Spacer(modifier = Modifier.size(48.dp))
             }
-
-            HueHeader("Home")
-
-            Spacer(modifier = Modifier.size(48.dp))
-
-            HueInfoCard(
-                headline = "What is this?",
-                body = "Extract vibrant color palettes from your photos and watch as Philips Hue lights bring them to life, transforming your space into a personalized, dynamic environment with a touch of your fingertips."
-            )
-
-            Spacer(modifier = Modifier.size(48.dp))
-
-            LightList(lights = lights, updateLight = { id, power ->
-                coroutineScope.launch {
-                    viewModel.toggleLight(id, power)
-                }
-            }, identifyLight = { id ->
-                coroutineScope.launch {
-                    viewModel.identifyLight(id)
-                }
-            })
-
-            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 
