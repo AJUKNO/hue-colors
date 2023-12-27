@@ -74,6 +74,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                     viewModel.getLights()
                 }
             }
+
             else -> {}
         }
     }
@@ -89,8 +90,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                 .padding(horizontal = 24.dp),
         ) {
             Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier.fillMaxWidth()
+                horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
             ) {
                 Switch(colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.surface,
@@ -118,6 +118,10 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                 coroutineScope.launch {
                     viewModel.toggleLight(id, power)
                 }
+            }, identifyLight = { id ->
+                coroutineScope.launch {
+                    viewModel.identifyLight(id)
+                }
             })
 
             Spacer(modifier = Modifier.size(48.dp))
@@ -127,7 +131,11 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 }
 
 @Composable
-fun LightList(lights: Resource<List<LightInfo>?>?, updateLight: (String, Boolean) -> Unit) {
+fun LightList(
+    lights: Resource<List<LightInfo>?>?,
+    updateLight: (String, Boolean) -> Unit,
+    identifyLight: (String) -> Unit
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -155,7 +163,9 @@ fun LightList(lights: Resource<List<LightInfo>?>?, updateLight: (String, Boolean
                     ) {
                         resource.data?.sortedBy { (it.v1Id.split("/")[2]).toInt() }
                             ?.forEach { light ->
-                                LightItem(light = light, updateLight)
+                                LightItem(
+                                    light = light, onToggle = updateLight, onClick = identifyLight
+                                )
                             }
                     }
                 }
@@ -180,20 +190,20 @@ fun LightList(lights: Resource<List<LightInfo>?>?, updateLight: (String, Boolean
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LightItem(light: LightInfo, updateLight: (String, Boolean) -> Unit) {
+fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (String) -> Unit) {
     var power by remember { mutableStateOf(light.power) }
     val lightColor = light.color?.let { Color(it) }
     val state by animateFloatAsState(if (!power) 0.3F else 1F, label = "")
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        ),
+    Card(colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ),
         modifier = Modifier.graphicsLayer { alpha = state },
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 24.dp
-        )
+        ),
+        onClick = { onClick(light.v1Id) }
     ) {
         Box(Modifier.let {
             if (lightColor != null) {
@@ -254,7 +264,7 @@ fun LightItem(light: LightInfo, updateLight: (String, Boolean) -> Unit) {
                             0.5F
                         )
                     ), checked = power, onCheckedChange = {
-                        updateLight(light.id, !power)
+                        onToggle(light.id, !power)
                         power = !power
                     })
                 }

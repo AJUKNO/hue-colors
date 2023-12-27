@@ -18,6 +18,7 @@ import com.github.ajalt.colormath.extensions.android.composecolor.toColormathCol
 import inkapplications.shade.core.Shade
 import inkapplications.shade.lights.parameters.ColorParameters
 import inkapplications.shade.lights.parameters.LightUpdateParameters
+import inkapplications.shade.lights.structures.Light
 import inkapplications.shade.structures.AuthToken
 import inkapplications.shade.structures.ResourceId
 import inkapplications.shade.structures.SecurityStrategy
@@ -67,12 +68,9 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
                     _shade.value = Resource.Success(
                         Shade(
-                            hostname = bridge.hostname,
-                            authToken = AuthToken(
-                                bridge.appKey,
-                                bridge.clientKey
-                            ),
-                            securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
+                            hostname = bridge.hostname, authToken = AuthToken(
+                                bridge.appKey, bridge.clientKey
+                            ), securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
                         )
                     )
 
@@ -114,41 +112,44 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
             val roomLights = lightRepo.getLights()
 
-            if (roomLights.isEmpty()) {
-                val hueLights = _shade.value?.data?.lights?.listLights()
+            coroutineScope {
+                if (roomLights.isEmpty()) {
+                    val hueLights = _shade.value?.data?.lights?.listLights()
 
-                if (hueLights != null) {
-                    for (light in hueLights) {
-                        lightRepo.insertOrUpdate(
-                            LightInfo(
-                                color = if (light.colorInfo != null) Color(
-                                    android.graphics.Color.parseColor(
-                                        light.colorInfo?.color?.toSRGB()?.toHex(true)
+                    hueLights?.let {
+                        val deferredInserts = hueLights.map { light ->
+                            async {
+                                lightRepo.insertOrUpdate(
+                                    LightInfo(
+                                        color = light.colorInfo?.color?.toSRGB()?.toHex(true)
+                                            ?.let { Color(android.graphics.Color.parseColor(it)) }?.toArgb(),
+                                        id = light.id.value,
+                                        label = "Lamp ${light.v1Id.toString().split("/")[2]}",
+                                        owner = light.owner.id.value,
+                                        power = light.powerInfo.on,
+                                        v1Id = light.v1Id ?: "Lamp",
+                                        isHue = light.colorInfo != null
                                     )
-                                ).toArgb() else null,
-                                id = light.id.value,
-                                label = "Lamp ${light.v1Id.toString().split("/")[2]}",
-                                owner = light.owner.id.value,
-                                power = light.powerInfo.on,
-                                v1Id = light.v1Id ?: "Lamp",
-                                isHue = light.colorInfo != null
-                            )
-                        )
+                                )
+                            }
+                        }
+                        deferredInserts.awaitAll()
                     }
                 }
 
-            }
+                val deferredUpdates = roomLights.map { light ->
+                    async {
+                        val hueLight = _shade.value?.data?.lights?.getLight(ResourceId(light.id))
+                        val color =
+                            hueLight?.colorInfo?.color?.toSRGB()?.toHex(true)?.let {
+                                Color(android.graphics.Color.parseColor(it))
+                            }?.toArgb()
+                        val powerState = hueLight?.powerInfo?.on ?: false
 
-            for (light in roomLights) {
-                val hueLight = _shade.value?.data?.lights?.getLight(ResourceId(light.id))
-                val color = if (hueLight?.colorInfo != null) Color(
-                    android.graphics.Color.parseColor(
-                        hueLight.colorInfo?.color?.toSRGB()?.toHex(true)
-                    )
-                ).toArgb() else null
-                val powerState = hueLight?.powerInfo?.on ?: false
-
-                lightRepo.insertOrUpdate(light.copy(color = color, power = powerState))
+                        lightRepo.insertOrUpdate(light.copy(color = color, power = powerState))
+                    }
+                }
+                deferredUpdates.awaitAll()
             }
 
             _lights.value = Resource.Success(lightRepo.getLights())
@@ -161,11 +162,25 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun toggleLight(id: String, power: Boolean) {
         try {
             shade.value?.data?.lights?.updateLight(
-                id = ResourceId(id),
-                parameters = LightUpdateParameters(
+                id = ResourceId(id), parameters = LightUpdateParameters(
                     power = PowerParameters(power)
                 )
             )
+        } catch (error: Exception) {
+            Utils.handleError(TAG, error)
+        }
+    }
+
+    suspend fun identifyLight(id: String) {
+        try {
+            val device =
+                shade.value?.data?.devices?.listDevices()?.find { device -> device.v1Id == id }
+
+            if (device != null) {
+                shade.value?.data?.devices?.identifyDevice(
+                    deviceId = device.id
+                )
+            }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
         }
@@ -191,11 +206,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                     val selectionArgs = arrayOf("$picturesFolderPath%")
 
                     context.contentResolver.query(
-                        uri,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null
+                        uri, projection, selection, selectionArgs, null
                     )?.use { cursor ->
                         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
 
@@ -268,12 +279,10 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                     val swatchColor = swatches[swatchIndex].rgb
 
                     shade?.value?.data?.lights?.updateLight(
-                        id = ResourceId(light.id),
-                        parameters = LightUpdateParameters(
+                        id = ResourceId(light.id), parameters = LightUpdateParameters(
                             color = ColorParameters(
                                 color = Color(swatchColor).toColormathColor()
-                            ),
-                            power = PowerParameters(
+                            ), power = PowerParameters(
                                 on = true
                             )
                         )
