@@ -18,4 +18,9 @@
     <string name="list_no_bridges_found">No bridges found.</string>
     <string name="no_lights_found">No lights found.</string>
     <string name="something_happened">Oh no! something happened.</string>
+    <string name="home">Home</string>
+    <string name="what_is_this">What is this?</string>
+    <string name="lights_description">Extract vibrant color palettes from your photos and watch as Philips Hue lights bring them to life, transforming your space into a personalized, dynamic environment with a touch of your fingertips.</string>
+    <string name="lights_title">Lights</string>
+    <string name="images">Images</string>
 </resources>

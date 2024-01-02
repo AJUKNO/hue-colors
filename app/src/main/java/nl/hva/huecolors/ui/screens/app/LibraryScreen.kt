@@ -69,6 +69,7 @@ import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
+import nl.hva.huecolors.ui.components.HueSubHeader
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
 
@@ -98,13 +99,12 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
             // TODO: HANDLE PERMISSION DENIAL
         }
     }
+    val isGranted =
+        Utils.checkPermissions(context, arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
-            Lifecycle.State.RESUMED -> {
-                val isGranted =
-                    Utils.checkPermissions(context, arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
-
+            Lifecycle.State.RESUMED, Lifecycle.State.STARTED -> {
                 if (isGranted) {
                     coroutineScope.launch {
                         viewModel.getImagesFromMedia(context)
@@ -113,10 +113,10 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
                     launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
                 }
             }
-            Lifecycle.State.DESTROYED -> {
+
+            else -> {
                 viewModel.clearImages()
             }
-            else -> {}
         }
     }
 
@@ -206,7 +206,7 @@ fun PaletteDrawer(
 ) {
     val source = image?.let { ImageDecoder.createSource(context.contentResolver, it) }
     val bitmap = source?.let { ImageDecoder.decodeBitmap(it).asShared() }
-    val palette = bitmap?.let { Utils.getPalette(it, 5) }
+    val palette = bitmap?.let { Utils.getPalette(it, 6) }
     if (isVisible) {
         ModalBottomSheet(
             onDismissRequest = onDismiss, sheetState = sheetState
@@ -260,7 +260,7 @@ fun ImageItem(context: Context, image: Uri?, onClick: () -> Unit) {
                 .data(image)
                 .crossfade(true)
                 .scale(Scale.FIT)
-                .size(500, 500)
+                .size(500, 300)
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .build(),
             contentDescription = "Test"

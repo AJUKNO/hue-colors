@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import inkapplications.shade.auth.structures.AppId
 import inkapplications.shade.core.Shade
+import inkapplications.shade.devices.structures.Device
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.structures.AuthToken
 import inkapplications.shade.structures.SecurityStrategy
@@ -19,7 +20,7 @@ import kotlin.time.ExperimentalTime
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val TAG = "BRIDGE_MODEL"
-    private val bridgeRepo = BridgeRepository(application.applicationContext)
+    var bridgeRepo = BridgeRepository(application.applicationContext)
 
     private val _shade = MutableLiveData<Resource<Shade?>>(Resource.Empty())
     val shade: LiveData<Resource<Shade?>>
@@ -33,7 +34,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     val isBridgeAuthorized
         get() = _isBridgeAuthorized
 
+    private val _devices = MutableLiveData<Resource<List<Device>?>>(Resource.Empty())
+    val devices
+        get() = _devices
 
+    /** Initialize shade */
     suspend fun initShade() {
         if (_shade.value != null) {
             try {
@@ -68,6 +73,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Check if bridge is authorized by checking if a bridge with credentials is present in the database
+     *
+     * @return Boolean
+     */
     suspend fun isBridgeAuthorized(): Boolean {
         return try {
             if (bridgeRepo.getCredentialsBridge() != null) {
@@ -85,6 +95,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Discover bridges, calls the getDevices() function to search for any bridges in the network */
     suspend fun discoverBridges() {
         try {
             _bridgeDiscovery.value = Resource.Loading()
@@ -107,6 +118,11 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /**
+     * Select bridge by saving the selected bridge to the database and setting the Shade configuration
+     *
+     * @param bridge
+     */
     suspend fun selectBridge(bridge: Bridge) {
         try {
             _shade.value?.data?.configuration?.apply {
@@ -136,6 +152,9 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Function to authorize a bridge.
+     * User must press the physical authorize button on the bridge to authorize.
+     * The authorized bridge will update in the database with credentials */
     @OptIn(ExperimentalTime::class)
     suspend fun authorizeBridge() {
         try {
@@ -167,6 +186,15 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             Utils.handleError(TAG, error)
             _isBridgeAuthorized.value =
                 Resource.Error(error.message ?: "An unknown error occurred.")
+        }
+    }
+
+    suspend fun getGroupedDevices() {
+        try {
+            val list = _shade.value?.data?.devices?.listDevices()
+            _devices.value = Resource.Success(list)
+        } catch (error: Exception) {
+
         }
     }
 }

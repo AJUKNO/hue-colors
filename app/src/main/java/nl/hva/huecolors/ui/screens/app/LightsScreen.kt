@@ -51,13 +51,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.LightInfo
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
+import nl.hva.huecolors.ui.components.HueSubHeader
 import nl.hva.huecolors.ui.theme.HueColorsTheme
+import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
 
 @Composable
@@ -69,7 +72,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
-            Lifecycle.State.RESUMED -> {
+            Lifecycle.State.RESUMED, Lifecycle.State.STARTED -> {
                 coroutineScope.launch {
                     viewModel.initShade()
                     viewModel.getLights()
@@ -106,23 +109,23 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                     })
                 }
 
-                HueHeader("Home")
+                HueHeader(stringResource(R.string.home))
 
                 Spacer(modifier = Modifier.size(48.dp))
 
                 HueInfoCard(
-                    headline = "What is this?",
-                    body = "Extract vibrant color palettes from your photos and watch as Philips Hue lights bring them to life, transforming your space into a personalized, dynamic environment with a touch of your fingertips."
+                    headline = stringResource(R.string.what_is_this),
+                    body = stringResource(R.string.lights_description)
                 )
 
                 Spacer(modifier = Modifier.size(48.dp))
 
                 LightList(lights = lights, updateLight = { id, power ->
-                    coroutineScope.launch {
+                    coroutineScope.launch(Dispatchers.IO) {
                         viewModel.toggleLight(id, power)
                     }
                 }, identifyLight = { id ->
-                    coroutineScope.launch {
+                    coroutineScope.launch(Dispatchers.IO) {
                         viewModel.identifyLight(id)
                     }
                 })
@@ -134,6 +137,13 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 
 }
 
+/**
+ * Light list
+ *
+ * @param lights List of lights using Resource as a wrapper
+ * @param updateLight Lambda to update the light
+ * @param identifyLight Lambda to identify the light
+ */
 @Composable
 fun LightList(
     lights: Resource<List<LightInfo>?>?,
@@ -143,56 +153,48 @@ fun LightList(
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            modifier = Modifier.alpha(0.8F),
-            text = "Lights".uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 2.sp
-        )
+        HueSubHeader(text = stringResource(R.string.lights_title))
 
-        Crossfade(targetState = lights, label = "Lights") { resource ->
+        Crossfade(targetState = lights, label = stringResource(R.string.lights_title)) { resource ->
             when (resource) {
-                is Resource.Loading -> {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .height(2.dp)
-                            .fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+                is Resource.Loading -> LinearProgressIndicator(
+                    modifier = Modifier
+                        .height(2.dp)
+                        .fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.secondary
+                )
 
                 is Resource.Success -> {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        resource.data?.sortedBy { (it.v1Id.split("/")[2]).toInt() }
-                            ?.forEach { light ->
-                                LightItem(
-                                    light = light, onToggle = updateLight, onClick = identifyLight
-                                )
-                            }
+                        resource.data?.sortedBy { it.v1Id.split("/")[2].toInt() }?.forEach { light ->
+                            LightItem(light = light, onToggle = updateLight, onClick = identifyLight)
+                        }
                     }
                 }
 
-                is Resource.Empty -> {
-                    Text(
-                        text = stringResource(R.string.no_lights_found),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                is Resource.Empty -> Text(
+                    text = stringResource(R.string.no_lights_found),
+                    style = MaterialTheme.typography.bodySmall
+                )
 
-                else -> {
-                    Text(
-                        text = stringResource(R.string.something_happened),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                else -> Text(
+                    text = stringResource(R.string.something_happened),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Light item
+ *
+ * @param light LightInfo object
+ * @param onToggle Lambda that calls on switch toggle
+ * @param onClick Lambda that calls on card click
+ */
 @Composable
 fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (String) -> Unit) {
     var power by remember { mutableStateOf(light.power) }
@@ -212,11 +214,7 @@ fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (S
         Box(Modifier.let {
             if (lightColor != null) {
                 it.background(
-                    brush = Brush.horizontalGradient(
-                        listOf(
-                            lightColor.copy(0.5F), lightColor.copy(0.9F)
-                        )
-                    )
+                    brush = Utils.gradient(lightColor.copy(0.6F), lightColor.copy(1F))
                 )
             } else it
         }) {
@@ -238,7 +236,7 @@ fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (S
                                 .padding(4.dp)
                                 .size(36.dp),
                             painter = painterResource(id = R.drawable.ic_bulb),
-                            contentDescription = "Bridge"
+                            contentDescription = stringResource(id = R.string.bridge)
                         )
 
                         Column {

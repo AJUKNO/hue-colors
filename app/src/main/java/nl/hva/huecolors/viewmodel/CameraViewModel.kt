@@ -23,10 +23,21 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val capturedImage: LiveData<Bitmap>
         get() = _capturedImage
 
+    /**
+     * Capture image, set captured image as LiveData
+     *
+     * @param image
+     */
     fun captureImage(image: Bitmap) {
         _capturedImage.value = image
     }
 
+    /**
+     * Save bitmap to storage (media folder)
+     *
+     * @param bitmap
+     * @param context
+     */
     fun saveToStorage(bitmap: Bitmap?, context: Context) {
         if (bitmap != null) {
             viewModelScope.launch {

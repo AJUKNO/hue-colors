@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +14,7 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +43,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -106,103 +109,119 @@ fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
             // TODO: HANDLE PERMISSION DENIAL
         }
     }
+    val isGranted = Utils.checkPermissions(context, permissions)
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
-            Lifecycle.State.RESUMED -> {
-                if (!Utils.checkPermissions(context, permissions)) {
+            Lifecycle.State.STARTED, Lifecycle.State.RESUMED -> {
+                if (!isGranted) {
                     launcher.launch(permissions)
                 }
             }
 
-            Lifecycle.State.DESTROYED -> {
-
+            else -> {
+                cameraController.unbind()
             }
-
-            else -> {}
         }
     }
 
-    if (Utils.checkPermissions(context, permissions)) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            floatingActionButtonPosition = FabPosition.Center,
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        val mainExecutor = ContextCompat.getMainExecutor(context)
-                        cameraController.takePicture(mainExecutor,
-                            object : ImageCapture.OnImageCapturedCallback() {
-                                override fun onCaptureSuccess(image: ImageProxy) {
-                                    viewModel.captureImage(image.toBitmap())
-                                    showBottomSheet = true
-                                }
-                            })
-                    },
-                    modifier = Modifier
-                        .size(124.dp)
-                        .padding(24.dp),
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_camera),
-                        contentDescription = "Camera",
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }) { padding ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                AndroidView(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding), factory = { ctx ->
-                    PreviewView(ctx).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
+
+    Crossfade(
+        targetState = isGranted,
+        label = "",
+        modifier = Modifier.fillMaxSize()
+    ) { granted ->
+        if (granted) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                floatingActionButtonPosition = FabPosition.Center,
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {
+                            val mainExecutor = ContextCompat.getMainExecutor(context)
+                            cameraController.takePicture(mainExecutor,
+                                object : ImageCapture.OnImageCapturedCallback() {
+                                    override fun onCaptureSuccess(image: ImageProxy) {
+                                        viewModel.captureImage(image.toBitmap())
+                                        showBottomSheet = true
+                                    }
+                                })
+                        },
+                        modifier = Modifier
+                            .size(124.dp)
+                            .padding(24.dp),
+                        shape = CircleShape,
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_camera),
+                            contentDescription = "Camera",
+                            modifier = Modifier.size(28.dp)
                         )
-                        scaleType = PreviewView.ScaleType.FILL_START
-                    }.also { previewView ->
-                        previewView.controller = cameraController
-                        cameraController.bindToLifecycle(lifecycleOwner)
                     }
+                }) { padding ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AndroidView(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding), factory = { ctx ->
+                        PreviewView(ctx).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            scaleType = PreviewView.ScaleType.FILL_START
+                        }.also { previewView ->
+                            previewView.controller = cameraController
+                            cameraController.bindToLifecycle(lifecycleOwner)
+                        }
+                    })
+                }
+            }
+
+            CameraDrawer(
+                onDismiss = {
+                    showBottomSheet = false
+                },
+                image = capturedImage,
+                onApply = { palette ->
+                    coroutineScope.launch {
+                        lightViewModel.initShade()
+                        lightViewModel.paletteToLights(palette)
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showBottomSheet = false
+                        }
+                    }
+                },
+                onSaveApply = { palette ->
+                    coroutineScope.launch {
+                        lightViewModel.initShade()
+                        lightViewModel.paletteToLights(palette)
+                        viewModel.saveToStorage(capturedImage, context)
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showBottomSheet = false
+                        }
+                    }
+                },
+                isVisible = showBottomSheet,
+                sheetState = sheetState,
+                context = context
+            )
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center
+            ) {
+                HueButton(text = "Allow camera permission", onClick = {
+                    launcher.launch(permissions)
                 })
             }
         }
-
-        CameraDrawer(
-            onDismiss = {
-                showBottomSheet = false
-            },
-            image = capturedImage,
-            onApply = { palette ->
-                coroutineScope.launch {
-                    lightViewModel.initShade()
-                    lightViewModel.paletteToLights(palette)
-                    sheetState.hide()
-                }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        showBottomSheet = false
-                    }
-                }
-            },
-            onSaveApply = { palette ->
-                coroutineScope.launch {
-                    lightViewModel.initShade()
-                    lightViewModel.paletteToLights(palette)
-                    viewModel.saveToStorage(capturedImage, context)
-                    sheetState.hide()
-                }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        showBottomSheet = false
-                    }
-                }
-            },
-            isVisible = showBottomSheet,
-            sheetState = sheetState,
-            context = context
-        )
     }
+
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
@@ -217,7 +236,7 @@ fun CameraDrawer(
     sheetState: SheetState,
     context: Context
 ) {
-    val palette = image?.let { Utils.getPalette(it, 5) }
+    val palette = image?.let { Utils.getPalette(it, 6) }
     if (isVisible) {
         ModalBottomSheet(
             onDismissRequest = onDismiss, sheetState = sheetState

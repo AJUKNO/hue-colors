@@ -15,6 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.hva.huecolors.utils.Utils
 
+/**
+ * Hue info card
+ *
+ * @param headline Headline to display
+ * @param body Body to display
+ */
 @Composable
 fun HueInfoCard(headline: String, body: String) {
     Card(
