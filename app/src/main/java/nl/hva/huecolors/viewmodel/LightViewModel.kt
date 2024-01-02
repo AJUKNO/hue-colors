@@ -58,6 +58,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     val images: LiveData<Resource<List<Uri>?>>
         get() = _images
 
+    /** Initialize Shade object */
     suspend fun initShade() {
         if (_shade.value != null) {
             try {
@@ -89,6 +90,11 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Check if bridge is authorized by checking if a bridge with credentials is present in the database
+     *
+     * @return Boolean
+     */
     suspend fun isBridgeAuthorized(): Boolean {
         return try {
             if (bridgeRepo.getCredentialsBridge() != null) {
@@ -106,6 +112,9 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Get lights. Loads an array of lights as LiveData in _lights.value
+     * */
     suspend fun getLights() {
         try {
             _lights.value = Resource.Loading()
@@ -159,6 +168,12 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Toggle power state of a light
+     *
+     * @param id Identifier of a light
+     * @param power Boolean state of the light
+     */
     suspend fun toggleLight(id: String, power: Boolean) {
         try {
             shade.value?.data?.lights?.updateLight(
@@ -171,6 +186,11 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Identify light by triggering a visual identification sequence
+     *
+     * @param id Identifier of a light
+     */
     suspend fun identifyLight(id: String) {
         try {
             val device =
@@ -186,6 +206,11 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Get images from media folder
+     *
+     * @param context
+     */
     fun getImagesFromMedia(context: Context) {
         viewModelScope.launch {
             try {
@@ -230,10 +255,18 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Clear images LiveData to free resources
+     * */
     fun clearImages() {
         _images.value = Resource.Empty()
     }
 
+    /**
+     * Function to apply the palette to the lights
+     *
+     * @param palette
+     */
     suspend fun paletteToLights(palette: Palette?) {
         try {
             // TODO: Fix bug, lights not updating correctly concurrently
