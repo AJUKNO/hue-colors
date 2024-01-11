@@ -3,7 +3,6 @@ package nl.hva.huecolors
 import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
-import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -47,7 +45,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -99,24 +96,22 @@ fun HueNavHost(navController: NavHostController) {
     val coroutineScope = rememberCoroutineScope()
     val viewModel: BridgeViewModel = viewModel()
     val isBridgeAuthorized by viewModel.isBridgeAuthorized.observeAsState()
+    val navEntry by navController.currentBackStackEntryAsState()
+    val startDestination =
+        rememberUpdatedState(if (isBridgeAuthorized?.data == true) Screens.App.route else Screens.Bridge.route)
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            viewModel.initShade()
             viewModel.isBridgeAuthorized()
         }
     }
 
-    val startDestination =
-        rememberUpdatedState(if (isBridgeAuthorized?.data == true) Screens.App.route else Screens.Bridge.route)
-
-    if (isBridgeAuthorized is Resource.Success) {
+    if ((isBridgeAuthorized is Resource.Success)) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surface, bottomBar = {
-//                if (navController.currentBackStackEntryAsState().value?.destination?.route in Screens.App.getAllRoutes()) {
-//                    BottomNavBar(navController)
-//                }
-                BottomNavBar(navController)
+                if (navEntry?.destination?.route in Screens.App.getAllRoutes()) {
+                    BottomNavBar(navController)
+                }
             }, modifier = Modifier.fillMaxSize()
         ) { padding ->
             Column(
@@ -195,8 +190,9 @@ fun BottomNavBar(navController: NavHostController) {
  * @param active Determines whether the item is currently active.
  * @param painter The resource ID of the icon to be displayed.
  * @param label The text label for the item.
- * @param onClick An optional lambda function to run when the item is clicked.
  * @param modifier Modifier for customization of the item's appearance.
+ * @param onClick An optional lambda function to run when the item is
+ *     clicked.
  */
 @Composable
 fun BottomNavBarItem(
@@ -242,7 +238,8 @@ fun BottomNavBarItem(
 }
 
 /**
- * Gets a shared ViewModel of type T associated with the parent route / nav entry
+ * Gets a shared ViewModel of type T associated with the parent route / nav
+ * entry
  *
  * @param navController The NavController used for navigation.
  * @return Shared ViewModel of type T
