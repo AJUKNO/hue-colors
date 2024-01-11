@@ -226,8 +226,8 @@ fun LightItem(
 ) {
     var power by remember { mutableStateOf(light.power) }
     val lightColor = light.color?.let { Color(it) }
-    val state by animateFloatAsState(if (!power) 0.3F else 1F, label = "")
     var brightness by remember { mutableStateOf(light.brightness) }
+    val state by animateFloatAsState(if (!power) 0.1F else (brightness / 100).coerceAtLeast(0.15F), label = "")
 
     LaunchedEffect(brightness) {
         delay(300L)
