@@ -19,6 +19,6 @@ interface BridgeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(hue: BridgeInfo)
 
-    @Query("SELECT * FROM bridge_info WHERE app_key IS NOT NULL AND client_key IS NOT NULL")
+    @Query("SELECT * FROM bridge_info WHERE NULLIF(app_key, '') IS NOT NULL AND NULLIF(client_key, '') IS NOT NULL")
     suspend fun getBridgeWithCredentials(): BridgeInfo?
 }
