@@ -117,4 +117,7 @@ dependencies {
 
     // Splashscreen
     implementation("androidx.core:core-splashscreen:1.1.0-alpha02")
+
+    // Pull to refresh
+    implementation("eu.bambooapps:compose-material3-pullrefresh:1.0.0")
 }

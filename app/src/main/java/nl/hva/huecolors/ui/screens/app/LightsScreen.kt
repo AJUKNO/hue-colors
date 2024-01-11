@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -46,12 +44,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.Dispatchers
+import eu.bambooapps.material3.pullrefresh.PullRefreshIndicator
+import eu.bambooapps.material3.pullrefresh.pullRefresh
+import eu.bambooapps.material3.pullrefresh.rememberPullRefreshState
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Resource
@@ -63,6 +62,7 @@ import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
     val coroutineScope = rememberCoroutineScope()
@@ -72,7 +72,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
-            Lifecycle.State.RESUMED, Lifecycle.State.STARTED -> {
+            Lifecycle.State.RESUMED -> {
                 coroutineScope.launch {
                     viewModel.initShade()
                     viewModel.getLights()
@@ -82,9 +82,19 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
             else -> {}
         }
     }
+    val isRefreshing by remember {
+        mutableStateOf(false)
+    }
+    val state = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = {
+        coroutineScope.launch {
+            viewModel.getLights()
+        }
+    })
 
-    Column(
-        modifier = Modifier.fillMaxSize()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(state)
     ) {
         Column(
             modifier = Modifier
@@ -95,19 +105,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                     .fillMaxSize()
                     .padding(horizontal = 24.dp),
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()
-                ) {
-                    Switch(colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.surface,
-                        checkedTrackColor = MaterialTheme.colorScheme.onSurface,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.surface,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.onSurface,
-                        uncheckedBorderColor = MaterialTheme.colorScheme.onSurface
-                    ), checked = true, onCheckedChange = {
-
-                    })
-                }
+                Spacer(modifier = Modifier.size(48.dp))
 
                 HueHeader(stringResource(R.string.home))
 
@@ -121,11 +119,11 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                 Spacer(modifier = Modifier.size(48.dp))
 
                 LightList(lights = lights, updateLight = { id, power ->
-                    coroutineScope.launch(Dispatchers.IO) {
+                    coroutineScope.launch {
                         viewModel.toggleLight(id, power)
                     }
                 }, identifyLight = { id ->
-                    coroutineScope.launch(Dispatchers.IO) {
+                    coroutineScope.launch {
                         viewModel.identifyLight(id)
                     }
                 })
@@ -133,6 +131,12 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                 Spacer(modifier = Modifier.size(48.dp))
             }
         }
+
+        PullRefreshIndicator(
+            refreshing = isRefreshing, state = state,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+        )
     }
 
 }
@@ -168,9 +172,14 @@ fun LightList(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        resource.data?.sortedBy { it.v1Id.split("/")[2].toInt() }?.forEach { light ->
-                            LightItem(light = light, onToggle = updateLight, onClick = identifyLight)
-                        }
+                        resource.data?.sortedBy { it.v1Id.split("/")[2].toInt() }
+                            ?.forEach { light ->
+                                LightItem(
+                                    light = light,
+                                    onToggle = updateLight,
+                                    onClick = identifyLight
+                                )
+                            }
                     }
                 }
 
