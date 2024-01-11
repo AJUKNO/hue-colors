@@ -19,8 +19,9 @@ sealed class Screens(
         fun getAllRoutes(): List<String> {
             return listOf(
                 Lights.route,
-                Library.route
-//                Camera.route
+                Library.route,
+                Camera.route,
+                Settings.route
             )
         }
     }
