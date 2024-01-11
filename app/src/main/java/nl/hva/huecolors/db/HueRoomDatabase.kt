@@ -8,7 +8,7 @@ import nl.hva.huecolors.data.model.BridgeInfo
 import nl.hva.huecolors.data.model.LightInfo
 
 @Database(
-    entities = [BridgeInfo::class, LightInfo::class], version = 1, exportSchema = false
+    entities = [BridgeInfo::class, LightInfo::class], version = 2, exportSchema = false
 )
 abstract class HueRoomDatabase : RoomDatabase() {
 

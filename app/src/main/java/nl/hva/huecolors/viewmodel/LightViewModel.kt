@@ -17,12 +17,16 @@ import androidx.palette.graphics.Palette
 import com.github.ajalt.colormath.extensions.android.composecolor.toColormathColor
 import inkapplications.shade.core.Shade
 import inkapplications.shade.lights.parameters.ColorParameters
+import inkapplications.shade.lights.parameters.DimmingParameters
 import inkapplications.shade.lights.parameters.LightUpdateParameters
 import inkapplications.shade.lights.structures.Light
 import inkapplications.shade.structures.AuthToken
 import inkapplications.shade.structures.ResourceId
 import inkapplications.shade.structures.SecurityStrategy
 import inkapplications.shade.structures.parameters.PowerParameters
+import inkapplications.spondee.scalar.percent
+import inkapplications.spondee.scalar.toWholePercentage
+import inkapplications.spondee.structure.toFloat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -60,7 +64,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Initialize Shade object */
-    suspend fun initShade() {
+    private suspend fun initShade() {
         _shade.value?.data?.let {
             Log.i(TAG, "Shade already initialized")
             return
@@ -172,7 +176,8 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                                 owner = light.owner.id.value,
                                 power = powerState,
                                 v1Id = light.v1Id ?: "Lamp",
-                                isHue = light.colorInfo != null
+                                isHue = light.colorInfo != null,
+                                brightness = light.dimmingInfo?.brightness?.toWholePercentage()?.toFloat() ?: 0F
                             )
                         )
                     }
@@ -215,6 +220,27 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 lightRepo.getLight(id)?.let { light ->
                     lightRepo.insertOrUpdate(light.copy(power = power))
+                }
+            }
+        } catch (error: Exception) {
+            Utils.handleError(TAG, error)
+        }
+    }
+
+    suspend fun setBrightness(brightness: Float, lightId: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                _shade.value?.data?.lights?.updateLight(
+                    id = ResourceId(lightId),
+                    parameters = LightUpdateParameters(
+                        dimming = DimmingParameters(
+                            brightness = brightness.percent
+                        )
+                    )
+                )
+
+                lightRepo.getLight(lightId)?.let { light ->
+                    lightRepo.insertOrUpdate(light.copy(brightness = brightness))
                 }
             }
         } catch (error: Exception) {

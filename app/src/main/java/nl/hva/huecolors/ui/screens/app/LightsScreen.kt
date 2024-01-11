@@ -21,6 +21,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -51,6 +53,7 @@ import androidx.navigation.compose.rememberNavController
 import eu.bambooapps.material3.pullrefresh.PullRefreshIndicator
 import eu.bambooapps.material3.pullrefresh.pullRefresh
 import eu.bambooapps.material3.pullrefresh.rememberPullRefreshState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Resource
@@ -117,15 +120,24 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 
                 Spacer(modifier = Modifier.size(48.dp))
 
-                LightList(lights = lights, updateLight = { id, power ->
-                    coroutineScope.launch {
-                        viewModel.toggleLight(id, power)
+                LightList(
+                    lights = lights,
+                    updateLight = { id, power ->
+                        coroutineScope.launch {
+                            viewModel.toggleLight(id, power)
+                        }
+                    },
+                    identifyLight = { id ->
+                        coroutineScope.launch {
+                            viewModel.identifyLight(id)
+                        }
+                    },
+                    setBrightness = { brightness, lightId ->
+                        coroutineScope.launch {
+                            viewModel.setBrightness(brightness, lightId)
+                        }
                     }
-                }, identifyLight = { id ->
-                    coroutineScope.launch {
-                        viewModel.identifyLight(id)
-                    }
-                })
+                )
 
                 Spacer(modifier = Modifier.size(48.dp))
             }
@@ -151,7 +163,8 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 fun LightList(
     lights: Resource<List<LightInfo>?>?,
     updateLight: (String, Boolean) -> Unit,
-    identifyLight: (String) -> Unit
+    identifyLight: (String) -> Unit,
+    setBrightness: (Float, String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -176,7 +189,8 @@ fun LightList(
                                 LightItem(
                                     light = light,
                                     onToggle = updateLight,
-                                    onClick = identifyLight
+                                    onClick = identifyLight,
+                                    onBrightness = setBrightness
                                 )
                             }
                     }
@@ -204,10 +218,21 @@ fun LightList(
  * @param onClick Lambda that calls on card click
  */
 @Composable
-fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (String) -> Unit) {
+fun LightItem(
+    light: LightInfo,
+    onToggle: (String, Boolean) -> Unit,
+    onClick: (String) -> Unit,
+    onBrightness: (Float, String) -> Unit
+) {
     var power by remember { mutableStateOf(light.power) }
     val lightColor = light.color?.let { Color(it) }
     val state by animateFloatAsState(if (!power) 0.3F else 1F, label = "")
+    var brightness by remember { mutableStateOf(light.brightness) }
+
+    LaunchedEffect(brightness) {
+        delay(300L)
+        onBrightness(brightness, light.id)
+    }
 
     Card(colors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -278,6 +303,21 @@ fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (S
                         power = !power
                     })
                 }
+                Slider(
+                    value = brightness,
+                    modifier = Modifier.height(24.dp),
+                    onValueChange = {
+                        brightness = it
+                    },
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.inverseSurface.copy(0.9F),
+                        activeTrackColor = MaterialTheme.colorScheme.inverseSurface.copy(0.8F),
+                        inactiveTrackColor = MaterialTheme.colorScheme.inverseOnSurface.copy(
+                            0.3F
+                        )
+                    ),
+                    valueRange = 1F..100F
+                )
             }
 
         }

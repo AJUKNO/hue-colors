@@ -36,7 +36,8 @@ class LightRepository(context: Context) {
                 power = light.power,
                 v1Id = light.v1Id,
                 id = light.id,
-                isHue = light.isHue
+                isHue = light.isHue,
+                brightness = light.brightness
             )
 
             lightDao.insertOrUpdate(updated)

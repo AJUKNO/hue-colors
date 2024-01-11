@@ -29,6 +29,8 @@ data class LightInfo(
 
     @ColumnInfo("power") var power: Boolean,
 
+    @ColumnInfo("brightness") var brightness: Float,
+
     @ColumnInfo("v1_id") var v1Id: String,
 
     @ColumnInfo("id") @PrimaryKey var id: String
