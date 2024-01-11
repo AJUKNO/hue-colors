@@ -74,7 +74,6 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
         when (lifecycleState) {
             Lifecycle.State.RESUMED -> {
                 coroutineScope.launch {
-                    viewModel.initShade()
                     viewModel.getLights()
                 }
             }

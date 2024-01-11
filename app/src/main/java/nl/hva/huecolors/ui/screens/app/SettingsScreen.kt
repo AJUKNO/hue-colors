@@ -46,7 +46,6 @@ fun SettingsScreen(navController: NavHostController, viewModel: BridgeViewModel)
         when (lifecycleState) {
             Lifecycle.State.RESUMED, Lifecycle.State.STARTED -> {
                 coroutineScope.launch {
-                    viewModel.initShade()
                     viewModel.getGroupedDevices()
                 }
             }

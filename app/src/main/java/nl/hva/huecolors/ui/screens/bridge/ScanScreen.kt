@@ -60,7 +60,6 @@ fun ScanScreen(navController: NavHostController, viewModel: BridgeViewModel) {
                 secondary = true,
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.initShade()
                         navController.navigate(Screens.Bridge.Ip.route)
                     }
                 })
@@ -69,7 +68,6 @@ fun ScanScreen(navController: NavHostController, viewModel: BridgeViewModel) {
                 icon = Icons.Filled.Search,
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.initShade()
                         navController.navigate(Screens.Bridge.List.route)
                     }
                 })

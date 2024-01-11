@@ -185,7 +185,6 @@ fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
                 image = capturedImage,
                 onApply = { palette ->
                     coroutineScope.launch {
-                        lightViewModel.initShade()
                         lightViewModel.paletteToLights(palette)
                         sheetState.hide()
                     }.invokeOnCompletion {
@@ -196,7 +195,6 @@ fun CameraScreen(navController: NavHostController, viewModel: CameraViewModel) {
                 },
                 onSaveApply = { palette ->
                     coroutineScope.launch {
-                        lightViewModel.initShade()
                         lightViewModel.paletteToLights(palette)
                         viewModel.saveToStorage(capturedImage, context)
                         sheetState.hide()
