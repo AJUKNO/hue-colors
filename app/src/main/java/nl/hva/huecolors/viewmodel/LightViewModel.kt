@@ -42,130 +42,161 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     private val bridgeRepo = BridgeRepository(application.applicationContext)
 
     private val _shade = MutableLiveData<Resource<Shade?>>(Resource.Empty())
-    val shade: LiveData<Resource<Shade?>>
-        get() = _shade
+    val shade: LiveData<Resource<Shade?>> = _shade
 
     private val _isBridgeAuthorized = MutableLiveData<Resource<Boolean?>>(Resource.Empty())
-    val isBridgeAuthorized
-        get() = _isBridgeAuthorized
+    val isBridgeAuthorized: LiveData<Resource<Boolean?>> = _isBridgeAuthorized
 
-    private var _lights = MutableLiveData<Resource<List<LightInfo>?>>(Resource.Empty())
+    private val _lights = MutableLiveData<Resource<List<LightInfo>?>>(Resource.Empty())
+    val lights: LiveData<Resource<List<LightInfo>?>> = _lights
 
-    val lights: LiveData<Resource<List<LightInfo>?>>
-        get() = _lights
+    private val _images = MutableLiveData<Resource<List<Uri>?>>(Resource.Empty())
+    val images: LiveData<Resource<List<Uri>?>> = _images
 
-    private var _images = MutableLiveData<Resource<List<Uri>?>>(Resource.Empty())
-    val images: LiveData<Resource<List<Uri>?>>
-        get() = _images
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            initShade()
+        }
+    }
 
     /** Initialize Shade object */
     suspend fun initShade() {
-        if (_shade.value != null) {
-            try {
-                _shade.value = Resource.Loading()
-
-                if (isBridgeAuthorized()) {
-                    val bridge = bridgeRepo.getCredentialsBridge()!!
-
-                    _shade.value = Resource.Success(
-                        Shade(
-                            hostname = bridge.hostname, authToken = AuthToken(
-                                bridge.appKey, bridge.clientKey
-                            ), securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
-                        )
-                    )
-
-                    Log.i(TAG, "Shade successfully initialized with credentials")
-                } else {
-                    _shade.value = Resource.Success(Shade())
-
-                    Log.i(TAG, "Shade successfully initialized")
-                }
-            } catch (error: Exception) {
-                Utils.handleError(TAG, error)
-                _shade.value = Resource.Error(error.message ?: "An unknown error occurred.")
-            }
-        } else {
+        _shade.value?.data?.let {
             Log.i(TAG, "Shade already initialized")
+            return
+        }
+
+        try {
+            withContext(Dispatchers.IO) {
+                _shade.postValue(Resource.Loading())
+
+                val shadeData = if (isBridgeAuthorized()) {
+                    val bridge = bridgeRepo.getCredentialsBridge()!!
+                    Log.i(TAG, "Shade successfully initialized with credentials")
+                    Shade(
+                        hostname = bridge.hostname,
+                        authToken = AuthToken(
+                            bridge.appKey, bridge.clientKey
+                        ),
+                        securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
+                    )
+                } else {
+                    Log.i(TAG, "Shade successfully initialized")
+                    Shade()
+                }
+
+                _shade.postValue(Resource.Success(shadeData))
+            }
+        } catch (error: Exception) {
+            Utils.handleError(TAG, error)
+            _shade.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
         }
     }
 
     /**
-     * Check if bridge is authorized by checking if a bridge with credentials is present in the database
+     * Check if bridge is authorized by checking if a bridge with credentials
+     * is present in the database
      *
      * @return Boolean
      */
-    suspend fun isBridgeAuthorized(): Boolean {
+    private suspend fun isBridgeAuthorized(): Boolean {
         return try {
-            if (bridgeRepo.getCredentialsBridge() != null) {
-                _isBridgeAuthorized.value = Resource.Success(true)
-                true
-            } else {
-                _isBridgeAuthorized.value = Resource.Success(false)
-                false
+            withContext(Dispatchers.IO) {
+                val isAuthorized = bridgeRepo.getCredentialsBridge() != null
+                _isBridgeAuthorized.postValue(Resource.Success(isAuthorized))
+                isAuthorized
             }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value =
-                Resource.Error(error.message ?: "An unknown error occurred.")
+            _isBridgeAuthorized.postValue(
+                Resource.Error(
+                    error.message ?: "An unknown error occurred."
+                )
+            )
             false
         }
     }
 
-    /**
-     * Get lights. Loads an array of lights as LiveData in _lights.value
-     * */
+
+    /** Get lights. Loads an array of lights as LiveData in _lights.value */
     suspend fun getLights() {
         try {
-            _lights.value = Resource.Loading()
+            withContext(Dispatchers.IO) {
+                _lights.postValue(Resource.Loading())
 
-            val roomLights = lightRepo.getLights()
+                val roomLights = lightRepo.getLights()
 
-            coroutineScope {
                 if (roomLights.isEmpty()) {
-                    val hueLights = _shade.value?.data?.lights?.listLights()
-
-                    hueLights?.let {
-                        val deferredInserts = hueLights.map { light ->
-                            async {
-                                lightRepo.insertOrUpdate(
-                                    LightInfo(
-                                        color = light.colorInfo?.color?.toSRGB()?.toHex(true)
-                                            ?.let { Color(android.graphics.Color.parseColor(it)) }?.toArgb(),
-                                        id = light.id.value,
-                                        label = "Lamp ${light.v1Id.toString().split("/")[2]}",
-                                        owner = light.owner.id.value,
-                                        power = light.powerInfo.on,
-                                        v1Id = light.v1Id ?: "Lamp",
-                                        isHue = light.colorInfo != null
-                                    )
-                                )
-                            }
-                        }
-                        deferredInserts.awaitAll()
-                    }
+                    updateLightsWithHue()
+                } else {
+                    updateRoomLights(roomLights)
                 }
 
-                val deferredUpdates = roomLights.map { light ->
-                    async {
-                        val hueLight = _shade.value?.data?.lights?.getLight(ResourceId(light.id))
-                        val color =
-                            hueLight?.colorInfo?.color?.toSRGB()?.toHex(true)?.let {
-                                Color(android.graphics.Color.parseColor(it))
-                            }?.toArgb()
-                        val powerState = hueLight?.powerInfo?.on ?: false
-
-                        lightRepo.insertOrUpdate(light.copy(color = color, power = powerState))
-                    }
-                }
-                deferredUpdates.awaitAll()
+                _lights.postValue(Resource.Success(lightRepo.getLights()))
             }
-
-            _lights.value = Resource.Success(lightRepo.getLights())
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
-            _lights.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            _lights.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
         }
+    }
+
+    private suspend fun updateRoomLights(roomLights: List<LightInfo>) {
+        coroutineScope {
+            val deferredUpdates = roomLights.map { light ->
+                async {
+                    val hueLight = getHueLightById(light.id)
+                    val (color, powerState) = getLightColorAndPower(hueLight)
+
+                    lightRepo.insertOrUpdate(light.copy(color = color, power = powerState))
+                }
+            }
+
+            deferredUpdates.awaitAll()
+        }
+    }
+
+    private suspend fun updateLightsWithHue() {
+        val hueLights = _shade.value?.data?.lights?.listLights()
+
+        hueLights?.let {
+            coroutineScope {
+                val deferredInserts = hueLights.map { light ->
+                    async {
+                        val (color, powerState) = getLightColorAndPower(light)
+
+                        lightRepo.insertOrUpdate(
+                            LightInfo(
+                                color = color,
+                                id = light.id.value,
+                                label = "Lamp ${light.v1Id.toString().split("/")[2]}",
+                                owner = light.owner.id.value,
+                                power = powerState,
+                                v1Id = light.v1Id ?: "Lamp",
+                                isHue = light.colorInfo != null
+                            )
+                        )
+                    }
+                }
+
+                deferredInserts.awaitAll()
+            }
+        }
+    }
+
+    private fun getLightColorAndPower(light: Light?): Pair<Int?, Boolean> {
+        return light?.let {
+            val color =
+                it.colorInfo?.color?.toSRGB()?.toHex(true)?.let { hex ->
+                    Color(android.graphics.Color.parseColor(hex))
+                }?.toArgb()
+            val powerState = it.powerInfo.on
+
+            color to powerState
+        } ?: (null to false)
+    }
+
+    private suspend fun getHueLightById(id: String): Light? {
+        return _shade.value?.data?.lights?.getLight(ResourceId(id))
     }
 
     /**
@@ -176,11 +207,16 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
      */
     suspend fun toggleLight(id: String, power: Boolean) {
         try {
-            shade.value?.data?.lights?.updateLight(
-                id = ResourceId(id), parameters = LightUpdateParameters(
-                    power = PowerParameters(power)
+            withContext(Dispatchers.IO) {
+                shade.value?.data?.lights?.updateLight(
+                    id = ResourceId(id), parameters = LightUpdateParameters(
+                        power = PowerParameters(power)
+                    )
                 )
-            )
+                lightRepo.getLight(id)?.let { light ->
+                    lightRepo.insertOrUpdate(light.copy(power = power))
+                }
+            }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
         }
@@ -193,13 +229,10 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
      */
     suspend fun identifyLight(id: String) {
         try {
-            val device =
-                shade.value?.data?.devices?.listDevices()?.find { device -> device.v1Id == id }
-
-            if (device != null) {
-                shade.value?.data?.devices?.identifyDevice(
-                    deviceId = device.id
-                )
+            withContext(Dispatchers.IO) {
+                shade.value?.data?.devices?.listDevices()?.find { it.v1Id == id }?.let { device ->
+                    shade.value?.data?.devices?.identifyDevice(deviceId = device.id)
+                }
             }
         } catch (error: Exception) {
             Utils.handleError(TAG, error)
@@ -214,16 +247,10 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     fun getImagesFromMedia(context: Context) {
         viewModelScope.launch {
             try {
-                _images.value = Resource.Loading()
+                _images.postValue(Resource.Loading())
 
                 val images = withContext(Dispatchers.IO) {
                     val imagesList = mutableListOf<Uri>()
-
-                    val projection = arrayOf(
-                        MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME
-                    )
-                    val uri: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-
                     val picturesFolderPath =
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES + "/palette").path
 
@@ -231,7 +258,11 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                     val selectionArgs = arrayOf("$picturesFolderPath%")
 
                     context.contentResolver.query(
-                        uri, projection, selection, selectionArgs, null
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        arrayOf(MediaStore.Images.Media._ID),
+                        selection,
+                        selectionArgs,
+                        null
                     )?.use { cursor ->
                         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
 
@@ -247,17 +278,15 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                     imagesList
                 }
 
-                _images.value = Resource.Success(images)
+                _images.postValue(Resource.Success(images))
             } catch (error: Exception) {
                 Utils.handleError(TAG, error)
-                _images.value = Resource.Error(error.message ?: "An unknown error occurred.")
+                _images.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
             }
         }
     }
 
-    /**
-     * Clear images LiveData to free resources
-     * */
+    /** Clear images LiveData to free resources */
     fun clearImages() {
         _images.value = Resource.Empty()
     }
@@ -311,7 +340,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
                     val swatchColor = swatches[swatchIndex].rgb
 
-                    shade?.value?.data?.lights?.updateLight(
+                    shade.value?.data?.lights?.updateLight(
                         id = ResourceId(light.id), parameters = LightUpdateParameters(
                             color = ColorParameters(
                                 color = Color(swatchColor).toColormathColor()
@@ -320,6 +349,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                             )
                         )
                     )
+                    Log.i(TAG, light.v1Id)
 
                     lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
                 }
