@@ -250,7 +250,7 @@ fun LightItem(light: LightInfo, onToggle: (String, Boolean) -> Unit, onClick: (S
 
                         Column {
                             Text(
-                                text = "${light.label}",
+                                text = light.label,
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Medium
                                 )
