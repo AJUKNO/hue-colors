@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -40,6 +41,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,11 +59,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.Observer
 import androidx.navigation.NavHostController
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.launch
@@ -114,6 +118,22 @@ fun CameraScreen(
             else -> {
                 cameraController.unbind()
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val observer = Observer<String?> { message ->
+            message?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        viewModel.toastMessage.observe(lifecycleOwner, observer)
+        lightViewModel.toastMessage.observe(lifecycleOwner, observer)
+
+        onDispose {
+            viewModel.toastMessage.removeObserver(observer)
+            lightViewModel.toastMessage.removeObserver(observer)
         }
     }
 
@@ -217,7 +237,7 @@ fun CameraScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                HueButton(text = "Allow camera permission", onClick = {
+                HueButton(text = stringResource(R.string.allow_camera_permission), onClick = {
                     launcher.launch(permissions)
                 })
             }
@@ -298,7 +318,7 @@ fun CameraDrawer(
                 Spacer(modifier = Modifier.size(48.dp))
 
                 HueButton(
-                    text = "Save and Apply",
+                    text = stringResource(R.string.save_and_apply),
                     onClick = { onSaveApply(palette) },
                     secondary = true,
                     loading = saveApply
@@ -307,7 +327,7 @@ fun CameraDrawer(
                 Spacer(modifier = Modifier.size(8.dp))
 
                 HueButton(
-                    text = "Apply",
+                    text = stringResource(id = R.string.apply),
                     onClick = { onApply(palette) },
                     loading = apply,
                     secondary = true
