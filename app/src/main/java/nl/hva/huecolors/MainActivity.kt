@@ -4,11 +4,17 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -55,6 +63,7 @@ import androidx.navigation.navigation
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.NavItem
+import nl.hva.huecolors.ui.components.HueInfoCard
 import nl.hva.huecolors.ui.screens.Screens
 import nl.hva.huecolors.ui.screens.app.CameraScreen
 import nl.hva.huecolors.ui.screens.app.LibraryScreen
@@ -65,20 +74,51 @@ import nl.hva.huecolors.ui.screens.bridge.IpScreen
 import nl.hva.huecolors.ui.screens.bridge.ListScreen
 import nl.hva.huecolors.ui.screens.bridge.ScanScreen
 import nl.hva.huecolors.ui.theme.HueColorsTheme
+import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.BridgeViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
         installSplashScreen()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                Color.Transparent.toArgb(), Color.Transparent.toArgb()
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                Color.Transparent.toArgb(), Color.Transparent.toArgb()
+            )
+        )
+
+        super.onCreate(savedInstanceState)
 
         setContent {
             HueColorsTheme(darkTheme = true) {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
                 ) {
-                    HueColorsApp()
+                    val wifiState by Utils.rememberWifiEnabledState()
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        HueColorsApp()
+                        AnimatedVisibility(
+                            visible = !wifiState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .clickable { }
+                                .background(MaterialTheme.colorScheme.scrim.copy(0.9F))
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 24.dp, vertical = 48.dp),
+                                    verticalArrangement = Arrangement.Bottom
+                                ) {
+                                    HueInfoCard(headline = getString(R.string.enable_wi_fi), body = getString(R.string.wifi_on_description))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -115,15 +155,13 @@ fun HueNavHost(navController: NavHostController) {
             }, modifier = Modifier.fillMaxSize()
         ) { padding ->
             Column(
-                Modifier
-                    .padding(padding)
-                    .fillMaxSize()
+                Modifier.fillMaxSize()
             ) {
                 NavHost(
                     navController = navController, startDestination = startDestination.value
                 ) {
                     BridgeGraph<BridgeViewModel>(navController)
-                    AppGraph<BridgeViewModel>(navController)
+                    AppGraph<BridgeViewModel>(navController, padding)
                 }
             }
         }
@@ -158,7 +196,7 @@ fun BottomNavBar(navController: NavHostController) {
                     )
                 )
             )
-            .height(80.dp),
+            .height(92.dp),
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         tonalElevation = 16.dp,
@@ -286,21 +324,24 @@ inline fun <reified T : ViewModel> NavGraphBuilder.BridgeGraph(navController: Na
  * @param navController The NavController used for navigation.
  */
 @RequiresApi(Build.VERSION_CODES.S)
-inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(navController: NavHostController) {
+inline fun <reified T : ViewModel> NavGraphBuilder.AppGraph(
+    navController: NavHostController,
+    padding: PaddingValues
+) {
     navigation(
         startDestination = Screens.App.Lights.route, route = Screens.App.route
     ) {
         composable(Screens.App.Lights.route) {
-            LightsScreen(navController = navController, it.sharedViewModel(navController))
+            LightsScreen(navController = navController, it.sharedViewModel(navController), padding)
         }
         composable(Screens.App.Library.route) {
-            LibraryScreen(navController = navController, it.sharedViewModel(navController))
+            LibraryScreen(navController = navController, it.sharedViewModel(navController), padding)
         }
         composable(Screens.App.Settings.route) {
             SettingsScreen(navController = navController, it.sharedViewModel(navController))
         }
         composable(Screens.App.Camera.route) {
-            CameraScreen(navController = navController, it.sharedViewModel(navController))
+            CameraScreen(navController = navController, it.sharedViewModel(navController), padding)
         }
     }
 }

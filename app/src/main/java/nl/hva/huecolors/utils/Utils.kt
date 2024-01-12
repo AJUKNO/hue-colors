@@ -1,13 +1,28 @@
 package nl.hva.huecolors.utils
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.palette.graphics.Palette
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class Utils {
 
@@ -78,6 +93,42 @@ class Utils {
         fun getPalette(bitmap: Bitmap, maxAmount: Int): Palette {
             return bitmap.let { image ->
                 Palette.from(image).maximumColorCount(maxAmount).generate()
+            }
+        }
+
+        @Composable
+        fun rememberWifiEnabledState(): State<Boolean> {
+            val context = LocalContext.current
+            val wifiManager = ContextCompat.getSystemService(context, WifiManager::class.java)
+
+            // Create MutableStateFlow to represent Wi-Fi state
+            val isWifiEnabledFlow = remember { MutableStateFlow(getWifiEnabledState(wifiManager)) }
+
+            DisposableEffect(context) {
+                // Add observer to listen for Wi-Fi state changes
+                val receiver = object : BroadcastReceiver() {
+                    override fun onReceive(context: Context?, intent: Intent?) {
+                        isWifiEnabledFlow.value = getWifiEnabledState(wifiManager)
+                    }
+                }
+
+                context.registerReceiver(receiver, IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION))
+
+                onDispose {
+                    // Unregister the receiver when the composable is disposed
+                    context.unregisterReceiver(receiver)
+                }
+            }
+
+            // Convert MutableStateFlow to State for use in Compose
+            return isWifiEnabledFlow.collectAsState()
+        }
+
+        private fun getWifiEnabledState(wifiManager: WifiManager?): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                wifiManager?.isWifiEnabled == true
+            } else {
+                wifiManager?.wifiState == WifiManager.WIFI_STATE_ENABLED
             }
         }
     }

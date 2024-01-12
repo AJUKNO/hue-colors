@@ -41,4 +41,6 @@
     <string name="failed_to_save_bitmap">Failed to save bitmap.</string>
     <string name="saved_image">Saved image</string>
     <string name="bridge_model">BRIDGE_MODEL</string>
+    <string name="wifi_on_description">Please switch your Wi-Fi on. The app will not work without it.</string>
+    <string name="enable_wi_fi">Enable Wi-Fi</string>
 </resources>
