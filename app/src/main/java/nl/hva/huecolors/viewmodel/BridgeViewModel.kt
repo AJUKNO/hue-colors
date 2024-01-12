@@ -1,26 +1,38 @@
 package nl.hva.huecolors.viewmodel
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import inkapplications.shade.auth.structures.AppId
 import inkapplications.shade.core.Shade
 import inkapplications.shade.devices.structures.Device
 import inkapplications.shade.discover.structures.Bridge
 import inkapplications.shade.structures.AuthToken
 import inkapplications.shade.structures.SecurityStrategy
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.BridgeInfo
 import nl.hva.huecolors.repository.BridgeRepository
 import nl.hva.huecolors.utils.Utils
+import nl.hva.huecolors.utils.Utils.Companion.handleError
 import kotlin.time.ExperimentalTime
 
 class BridgeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val TAG = "BRIDGE_MODEL"
-    var bridgeRepo = BridgeRepository(application.applicationContext)
+    @SuppressLint("StaticFieldLeak")
+    private val context = application.applicationContext
+    private val TAG = context.getString(R.string.bridge_model)
+    private var bridgeRepo = BridgeRepository(application.applicationContext)
+
+    private val _toastMessage = MutableLiveData<String>()
+    val toastMessage: LiveData<String> = _toastMessage
 
     private val _shade = MutableLiveData<Resource<Shade?>>(Resource.Empty())
     val shade: LiveData<Resource<Shade?>>
@@ -38,38 +50,48 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     val devices
         get() = _devices
 
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            initShade()
+        }
+    }
+
     /** Initialize shade */
-    suspend fun initShade() {
-        if (_shade.value != null) {
-            try {
-                _shade.value = Resource.Loading()
+    private suspend fun initShade() {
+        _shade.value?.data?.let {
+            Log.i(TAG, context.getString(R.string.shade_already_initialized))
+            return
+        }
 
-                if (isBridgeAuthorized()) {
+        try {
+            withContext(Dispatchers.IO) {
+                _shade.postValue(Resource.Loading())
+
+                val shadeData = if (isBridgeAuthorized()) {
                     val bridge = bridgeRepo.getCredentialsBridge()!!
-
-                    _shade.value = Resource.Success(
-                        Shade(
-                            hostname = bridge.hostname,
-                            authToken = AuthToken(
-                                bridge.appKey,
-                                bridge.clientKey
-                            ),
-                            securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
-                        )
+                    Log.i(TAG,
+                        context.getString(R.string.shade_successfully_initialized_with_credentials))
+                    Shade(
+                        hostname = bridge.hostname,
+                        authToken = AuthToken(
+                            bridge.appKey, bridge.clientKey
+                        ),
+                        securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
                     )
-
-                    Log.i(TAG, "Shade successfully initialized with credentials")
                 } else {
-                    _shade.value = Resource.Success(Shade())
-
-                    Log.i(TAG, "Shade successfully initialized")
+                    Log.i(TAG, context.getString(R.string.shade_successfully_initialized))
+                    Shade()
                 }
-            } catch (error: Exception) {
-                Utils.handleError(TAG, error)
-                _shade.value = Resource.Error(error.message ?: "An unknown error occurred.")
+
+                _shade.postValue(Resource.Success(shadeData))
             }
-        } else {
-            Log.i(TAG, "Shade already initialized")
+        } catch (error: Exception) {
+            _shade.postValue(
+                Resource.Error(
+                    error.message ?: context.getString(R.string.an_unknown_error_occurred)
+                )
+            )
+            handleError(error)
         }
     }
 
@@ -80,17 +102,14 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
      */
     suspend fun isBridgeAuthorized(): Boolean {
         return try {
-            if (bridgeRepo.getCredentialsBridge() != null) {
-                _isBridgeAuthorized.value = Resource.Success(true)
-                true
-            } else {
-                _isBridgeAuthorized.value = Resource.Success(false)
-                false
+            withContext(Dispatchers.IO) {
+                val isAuthorized = bridgeRepo.getCredentialsBridge() != null
+                _isBridgeAuthorized.postValue(Resource.Success(isAuthorized))
+                isAuthorized
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value =
-                Resource.Error(error.message ?: "An unknown error occurred.")
+            handleError(error)
+            _isBridgeAuthorized.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
             false
         }
     }
@@ -98,23 +117,22 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     /** Discover bridges, calls the getDevices() function to search for any bridges in the network */
     suspend fun discoverBridges() {
         try {
-            _bridgeDiscovery.value = Resource.Loading()
+            _bridgeDiscovery.postValue(Resource.Loading())
 
-            _bridgeDiscovery.value = Resource.Success(
-                _shade.value?.data?.onlineDiscovery?.getDevices()
-            )
+            val discoveredDevices = _shade.value?.data?.onlineDiscovery?.getDevices()
 
-            if (_bridgeDiscovery.value?.data != null) {
-                Log.i(
-                    TAG,
-                    "${_bridgeDiscovery.value?.data?.size} bridge(s) found: ${_bridgeDiscovery.value?.data}"
-                )
-            } else {
-                Log.i(TAG, "No bridges found.")
+            _bridgeDiscovery.postValue(Resource.Success(discoveredDevices))
+
+            discoveredDevices?.let {
+                if (it.isNotEmpty()) {
+                    Log.i(TAG, "${it.size} bridge(s) found: $it")
+                } else {
+                    Log.i(TAG, "No bridges found.")
+                }
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
-            _bridgeDiscovery.value = Resource.Error(error.message ?: "An unknown error occurred.")
+            handleError(error)
+            _bridgeDiscovery.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
         }
     }
 
@@ -135,7 +153,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             val bridgeInfo = BridgeInfo(
-                hostname = _shade.value?.data?.configuration?.hostname?.value!!,
+                hostname = _shade.value?.data?.configuration?.hostname?.value.orEmpty(),
                 bridgeId = bridge.id.value,
                 appKey = "",
                 clientKey = "",
@@ -148,7 +166,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 TAG, "Selected bridge: ${_shade.value?.data?.configuration?.hostname?.value}"
             )
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
+            handleError(error)
         }
     }
 
@@ -158,7 +176,7 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
     @OptIn(ExperimentalTime::class)
     suspend fun authorizeBridge() {
         try {
-            _isBridgeAuthorized.value = Resource.Loading()
+            _isBridgeAuthorized.postValue(Resource.Loading())
 
             val authToken: AuthToken? = _shade.value?.data?.auth?.awaitToken(
                 appId = AppId(
@@ -167,34 +185,44 @@ class BridgeViewModel(application: Application) : AndroidViewModel(application) 
                 )
             )
 
-            val bridgeBeingAuthorized =
-                bridgeRepo.getBridge(_shade.value?.data?.configuration?.hostname?.value!!)
+            _shade.value?.data?.configuration?.hostname?.value?.let { hostname ->
+                val bridgeBeingAuthorized = bridgeRepo.getBridge(hostname)
 
-            if (bridgeBeingAuthorized != null && authToken != null) {
-                bridgeRepo.insertOrUpdate(
-                    bridgeBeingAuthorized.copy(
-                        appKey = authToken.applicationKey,
-                        clientKey = authToken.clientKey!!
+                if (bridgeBeingAuthorized != null && authToken != null) {
+                    bridgeRepo.insertOrUpdate(
+                        bridgeBeingAuthorized.copy(
+                            appKey = authToken.applicationKey,
+                            clientKey = authToken.clientKey ?: ""
+                        )
                     )
-                )
+                }
             }
 
-            isBridgeAuthorized.value = Resource.Success()
+            _isBridgeAuthorized.postValue(Resource.Success(true))
 
             Log.i(TAG, "Successfully authorized bridge")
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
-            _isBridgeAuthorized.value =
-                Resource.Error(error.message ?: "An unknown error occurred.")
+            handleError(error)
+            _isBridgeAuthorized.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
         }
     }
 
     suspend fun getGroupedDevices() {
         try {
             val list = _shade.value?.data?.devices?.listDevices()
-            _devices.value = Resource.Success(list)
+            _devices.postValue(Resource.Success(list))
         } catch (error: Exception) {
-
+            handleError(error)
         }
+    }
+
+    private fun showToast(message: String) {
+        _toastMessage.postValue(message)
+    }
+
+    private fun handleError(error: Exception) {
+        Utils.handleError(TAG, error)
+        val errorMessage = error.message ?: context.getString(R.string.an_unknown_error_occurred)
+        showToast(errorMessage)
     }
 }
