@@ -38,7 +38,7 @@ fun HueButton(
     onClick: () -> Unit,
     secondary: Boolean = false,
     disabled: Boolean? = false,
-    loading: Boolean
+    loading: Boolean? = false
 ) {
     val type = ButtonDefaults.buttonColors(
         containerColor = if (secondary) Color.Transparent else MaterialTheme.colorScheme.primary,
@@ -70,7 +70,7 @@ fun HueButton(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (loading) {
+            if (loading == true) {
                 CircularProgressIndicator(
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(20.dp),
