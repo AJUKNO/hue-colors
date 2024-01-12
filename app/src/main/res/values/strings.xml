@@ -40,4 +40,5 @@
     <string name="save_and_apply">Save and Apply</string>
     <string name="failed_to_save_bitmap">Failed to save bitmap.</string>
     <string name="saved_image">Saved image</string>
+    <string name="bridge_model">BRIDGE_MODEL</string>
 </resources>
