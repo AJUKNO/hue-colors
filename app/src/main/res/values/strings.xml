@@ -23,4 +23,11 @@
     <string name="lights_description">Extract vibrant color palettes from your photos and watch as Philips Hue lights bring them to life, transforming your space into a personalized, dynamic environment with a touch of your fingertips.</string>
     <string name="lights_title">Lights</string>
     <string name="images">Images</string>
+    <string name="loaded_lights">Loaded lights</string>
+    <string name="an_unknown_error_occurred">An unknown error occurred.</string>
+    <string name="lights_model">LIGHTS_MODEL</string>
+    <string name="shade_already_initialized">Shade already initialized</string>
+    <string name="shade_successfully_initialized_with_credentials">Shade successfully initialized with credentials</string>
+    <string name="shade_successfully_initialized">Shade successfully initialized</string>
+    <string name="applied_swatches">Applied %d swatches</string>
 </resources>

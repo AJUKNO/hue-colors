@@ -1,5 +1,6 @@
 package nl.hva.huecolors.viewmodel
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ContentUris
 import android.content.Context
@@ -33,6 +34,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.hva.huecolors.R
 import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.data.model.LightInfo
 import nl.hva.huecolors.repository.BridgeRepository
@@ -41,9 +43,14 @@ import nl.hva.huecolors.utils.Utils
 
 class LightViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val TAG = "LIGHTS_MODEL"
+    @SuppressLint("StaticFieldLeak")
+    private val context = application.applicationContext
+    private val TAG = context.getString(R.string.lights_model)
     private val lightRepo = LightRepository(application.applicationContext)
     private val bridgeRepo = BridgeRepository(application.applicationContext)
+
+    private val _toastMessage = MutableLiveData<String>()
+    val toastMessage: LiveData<String> = _toastMessage
 
     private val _shade = MutableLiveData<Resource<Shade?>>(Resource.Empty())
     val shade: LiveData<Resource<Shade?>> = _shade
@@ -66,7 +73,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     /** Initialize Shade object */
     private suspend fun initShade() {
         _shade.value?.data?.let {
-            Log.i(TAG, "Shade already initialized")
+            Log.i(TAG, context.getString(R.string.shade_already_initialized))
             return
         }
 
@@ -76,7 +83,8 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
                 val shadeData = if (isBridgeAuthorized()) {
                     val bridge = bridgeRepo.getCredentialsBridge()!!
-                    Log.i(TAG, "Shade successfully initialized with credentials")
+                    Log.i(TAG,
+                        context.getString(R.string.shade_successfully_initialized_with_credentials))
                     Shade(
                         hostname = bridge.hostname,
                         authToken = AuthToken(
@@ -85,15 +93,19 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                         securityStrategy = SecurityStrategy.Insecure(bridge.hostname)
                     )
                 } else {
-                    Log.i(TAG, "Shade successfully initialized")
+                    Log.i(TAG, context.getString(R.string.shade_successfully_initialized))
                     Shade()
                 }
 
                 _shade.postValue(Resource.Success(shadeData))
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
-            _shade.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
+            _shade.postValue(
+                Resource.Error(
+                    error.message ?: context.getString(R.string.an_unknown_error_occurred)
+                )
+            )
+            handleError(error)
         }
     }
 
@@ -111,12 +123,12 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                 isAuthorized
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
             _isBridgeAuthorized.postValue(
                 Resource.Error(
-                    error.message ?: "An unknown error occurred."
+                    error.message ?: context.getString(R.string.an_unknown_error_occurred)
                 )
             )
+            handleError(error)
             false
         }
     }
@@ -137,10 +149,16 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 _lights.postValue(Resource.Success(lightRepo.getLights()))
+
+                showToast(context.getString(R.string.loaded_lights))
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
-            _lights.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
+            _lights.postValue(
+                Resource.Error(
+                    error.message ?: context.getString(R.string.an_unknown_error_occurred)
+                )
+            )
+            handleError(error)
         }
     }
 
@@ -160,9 +178,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun updateLightsWithHue() {
-        val hueLights = _shade.value?.data?.lights?.listLights()
-
-        hueLights?.let {
+        _shade.value?.data?.lights?.listLights()?.let { hueLights ->
             coroutineScope {
                 val deferredInserts = hueLights.map { light ->
                     async {
@@ -172,12 +188,13 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                             LightInfo(
                                 color = color,
                                 id = light.id.value,
-                                label = "Lamp ${light.v1Id.toString().split("/")[2]}",
+                                label = "Lamp ${light.v1Id?.split("/")?.get(2) ?: "Unknown"}",
                                 owner = light.owner.id.value,
                                 power = powerState,
                                 v1Id = light.v1Id ?: "Lamp",
                                 isHue = light.colorInfo != null,
-                                brightness = light.dimmingInfo?.brightness?.toWholePercentage()?.toFloat() ?: 0F
+                                brightness = light.dimmingInfo?.brightness?.toWholePercentage()
+                                    ?.toFloat() ?: 0F
                             )
                         )
                     }
@@ -223,28 +240,30 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
+            handleError(error)
         }
     }
 
     suspend fun setBrightness(brightness: Float, lightId: String) {
         try {
             withContext(Dispatchers.IO) {
-                _shade.value?.data?.lights?.updateLight(
-                    id = ResourceId(lightId),
-                    parameters = LightUpdateParameters(
-                        dimming = DimmingParameters(
-                            brightness = brightness.percent
-                        )
-                    )
-                )
-
                 lightRepo.getLight(lightId)?.let { light ->
+                    if (light.power) {
+                        _shade.value?.data?.lights?.updateLight(
+                            id = ResourceId(lightId),
+                            parameters = LightUpdateParameters(
+                                dimming = DimmingParameters(
+                                    brightness = brightness.percent
+                                )
+                            )
+                        )
+                    }
+
                     lightRepo.insertOrUpdate(light.copy(brightness = brightness))
                 }
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
+            handleError(error)
         }
     }
 
@@ -261,7 +280,7 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
+            handleError(error)
         }
     }
 
@@ -306,15 +325,19 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
                 _images.postValue(Resource.Success(images))
             } catch (error: Exception) {
-                Utils.handleError(TAG, error)
-                _images.postValue(Resource.Error(error.message ?: "An unknown error occurred."))
+                _images.postValue(
+                    Resource.Error(
+                        error.message ?: context.getString(R.string.an_unknown_error_occurred)
+                    )
+                )
+                handleError(error)
             }
         }
     }
 
     /** Clear images LiveData to free resources */
     fun clearImages() {
-        _images.value = Resource.Empty()
+        _images.postValue(Resource.Empty())
     }
 
     /**
@@ -379,9 +402,22 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 
                     lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
                 }
+                
+                showToast(context.getString(R.string.applied_swatches, palette.swatches.size))
             }
         } catch (error: Exception) {
-            Utils.handleError(TAG, error)
+            handleError(error)
         }
     }
+
+    private fun showToast(message: String) {
+        _toastMessage.postValue(message)
+    }
+
+    private fun handleError(error: Exception) {
+        Utils.handleError(TAG, error)
+        val errorMessage = error.message ?: context.getString(R.string.an_unknown_error_occurred)
+        showToast(errorMessage)
+    }
+
 }
