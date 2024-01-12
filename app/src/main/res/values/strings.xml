@@ -35,4 +35,5 @@
     <string name="apply">Apply</string>
     <string name="you_don_t_have_permission_to_view_media">You don\'t have permission to view media</string>
     <string name="swatches">Swatches</string>
+    <string name="camera_model">CAMERA_MODEL</string>
 </resources>
