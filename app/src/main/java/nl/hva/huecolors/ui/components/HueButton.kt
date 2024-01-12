@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,7 +37,8 @@ fun HueButton(
     icon: ImageVector? = null,
     onClick: () -> Unit,
     secondary: Boolean = false,
-    disabled: Boolean? = false
+    disabled: Boolean? = false,
+    loading: Boolean
 ) {
     val type = ButtonDefaults.buttonColors(
         containerColor = if (secondary) Color.Transparent else MaterialTheme.colorScheme.primary,
@@ -46,18 +48,16 @@ fun HueButton(
     val modifier = Modifier
         .fillMaxWidth()
         .height(52.dp)
-        .let {
-            if (secondary) it.border(
-                width = 1.dp,
-                brush = Brush.horizontalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-                    )
-                ),
-                shape = RoundedCornerShape(24.dp)
-            ) else it
-        }
+        .border(
+            width = 1.dp,
+            brush = Brush.horizontalGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+                )
+            ),
+            shape = RoundedCornerShape(24.dp)
+        )
 
     Button(
         onClick = onClick,
@@ -70,10 +70,18 @@ fun HueButton(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            icon?.let {
-                Icon(imageVector = it, contentDescription = text, modifier = Modifier.size(16.dp))
+            if (loading) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(20.dp),
+                    color = if (secondary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.inverseOnSurface
+                )
+            } else {
+                icon?.let {
+                    Icon(imageVector = it, contentDescription = text, modifier = Modifier.size(16.dp))
+                }
+                Text(text = text, fontWeight = FontWeight.SemiBold)
             }
-            Text(text = text, fontWeight = FontWeight.SemiBold)
         }
     }
 }

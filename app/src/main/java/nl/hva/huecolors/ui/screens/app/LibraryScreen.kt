@@ -5,7 +5,6 @@ import android.content.Context
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,6 +71,7 @@ import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
+import nl.hva.huecolors.ui.components.HueSubHeader
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
 
@@ -88,6 +88,7 @@ fun LibraryScreen(
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
     val images by viewModel.images.observeAsState()
     val coroutineScope = rememberCoroutineScope()
+    var loadingState by remember { mutableStateOf(false) }
     var showBottomSheet by rememberSaveable {
         mutableStateOf(false)
     }
@@ -141,7 +142,9 @@ fun LibraryScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(padding)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
     ) {
         LazyVerticalGrid(contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
@@ -196,20 +199,30 @@ fun LibraryScreen(
 
     }
 
-    PaletteDrawer(onDismiss = {
-        showBottomSheet = false
-    }, image = selectedImage, onApply = { palette ->
-        coroutineScope.launch {
-            viewModel.paletteToLights(palette)
-            sheetState.hide()
-        }.invokeOnCompletion {
-            if (!sheetState.isVisible) {
-                showBottomSheet = false
+    PaletteDrawer(
+        onDismiss = {
+            showBottomSheet = false
+        },
+        loadingState = loadingState,
+        image = selectedImage,
+        onApply = { palette ->
+            coroutineScope.launch {
+                loadingState = true
+                viewModel.paletteToLights(palette)
+                sheetState.hide()
+            }.invokeOnCompletion {
+                if (!sheetState.isVisible) {
+                    showBottomSheet = false
+                    loadingState = false
+                }
+
+
             }
-
-
-        }
-    }, isVisible = showBottomSheet, sheetState = sheetState, context = context)
+        },
+        isVisible = showBottomSheet,
+        sheetState = sheetState,
+        context = context
+    )
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
@@ -221,7 +234,8 @@ fun PaletteDrawer(
     onApply: (Palette?) -> Unit,
     isVisible: Boolean,
     sheetState: SheetState,
-    context: Context
+    context: Context,
+    loadingState: Boolean
 ) {
     val source = image?.let { ImageDecoder.createSource(context.contentResolver, it) }
     val bitmap = source?.let { ImageDecoder.decodeBitmap(it).asShared() }
@@ -234,34 +248,44 @@ fun PaletteDrawer(
                 modifier = Modifier.padding(48.dp),
                 verticalArrangement = Arrangement.spacedBy(48.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    palette?.swatches?.forEach { color ->
-                        Box(
-                            modifier = Modifier
-                                .shadow(
-                                    elevation = 4.dp,
-                                    spotColor = Color.Black,
-                                    shape = CircleShape,
-                                    clip = true
-                                )
-                                .border(
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = MaterialTheme.colorScheme.inverseSurface
-                                    ),
-                                    shape = CircleShape
-                                )
-                                .height(36.dp)
-                                .width(36.dp)
-                                .clip(CircleShape)
-                                .background(color = Color(color.rgb))
-                        )
+                    HueSubHeader(text = stringResource(R.string.swatches))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        palette?.swatches?.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .shadow(
+                                        elevation = 4.dp,
+                                        spotColor = Color.Black,
+                                        shape = CircleShape,
+                                        clip = true
+                                    )
+                                    .border(
+                                        border = BorderStroke(
+                                            width = 1.dp,
+                                            color = MaterialTheme.colorScheme.primary.copy(0.3F)
+                                        ),
+                                        shape = CircleShape
+                                    )
+                                    .height(36.dp)
+                                    .width(36.dp)
+                                    .clip(CircleShape)
+                                    .background(color = Color(color.rgb))
+                            )
+                        }
                     }
                 }
-                HueButton(text = stringResource(R.string.apply), onClick = { onApply(palette) })
+                HueButton(
+                    secondary = true,
+                    text = stringResource(R.string.apply),
+                    onClick = { onApply(palette) },
+                    loading = loadingState
+                )
             }
         }
     }
