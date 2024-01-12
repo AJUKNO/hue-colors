@@ -30,4 +30,9 @@
     <string name="shade_successfully_initialized_with_credentials">Shade successfully initialized with credentials</string>
     <string name="shade_successfully_initialized">Shade successfully initialized</string>
     <string name="applied_swatches">Applied %d swatches</string>
+    <string name="library">Library</string>
+    <string name="library_description">The Library lets you extract vibrant color palettes from your phone\'s images and applies them to Philips Hue lights, instantly transforming your space into a personalized and dynamic environment.</string>
+    <string name="apply">Apply</string>
+    <string name="you_don_t_have_permission_to_view_media">You don\'t have permission to view media</string>
+    <string name="swatches">Swatches</string>
 </resources>

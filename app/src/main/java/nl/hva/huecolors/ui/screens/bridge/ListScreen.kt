@@ -96,9 +96,11 @@ fun ListScreen(navController: NavHostController, viewModel: BridgeViewModel) {
                 secondary = true,
                 disabled
             )
-            HueButton(text = stringResource(R.string.bridge_connect),
-                disabled = bridgeDiscovery?.data.isNullOrEmpty(),
-                onClick = { navController.navigate(Screens.Bridge.Interact.route) })
+            HueButton(
+                text = stringResource(R.string.bridge_connect),
+                onClick = { navController.navigate(Screens.Bridge.Interact.route) },
+                disabled = bridgeDiscovery?.data.isNullOrEmpty()
+            )
         }
     }) { padding ->
         Column(

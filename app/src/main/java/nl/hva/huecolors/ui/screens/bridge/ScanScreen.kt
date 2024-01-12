@@ -56,21 +56,25 @@ fun ScanScreen(navController: NavHostController, viewModel: BridgeViewModel) {
         Column(
             modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            HueButton(text = stringResource(R.string.bridge_ip_address),
-                secondary = true,
+            HueButton(
+                text = stringResource(R.string.bridge_ip_address),
                 onClick = {
                     coroutineScope.launch {
                         navController.navigate(Screens.Bridge.Ip.route)
                     }
-                })
+                },
+                secondary = true
+            )
 
-            HueButton(text = stringResource(R.string.bridge_scan),
+            HueButton(
+                text = stringResource(R.string.bridge_scan),
                 icon = Icons.Filled.Search,
                 onClick = {
                     coroutineScope.launch {
                         navController.navigate(Screens.Bridge.List.route)
                     }
-                })
+                }
+            )
         }
     }) { padding ->
         Column(

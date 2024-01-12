@@ -98,10 +98,10 @@ fun InteractScreen(navController: NavHostController, viewModel: BridgeViewModel)
             ) {
                 HueButton(
                     text = stringResource(R.string.bridge_next),
-                    disabled = !(isBridgeAuthorized is Resource.Success),
                     onClick = {
                         navController.navigate(Screens.App.route)
-                    }
+                    },
+                    disabled = !(isBridgeAuthorized is Resource.Success)
                 )
             }
         },
