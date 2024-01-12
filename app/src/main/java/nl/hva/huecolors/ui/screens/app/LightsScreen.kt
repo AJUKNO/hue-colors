@@ -1,16 +1,22 @@
 package nl.hva.huecolors.ui.screens.app
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,12 +55,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.Observer
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import eu.bambooapps.material3.pullrefresh.PullRefreshIndicator
 import eu.bambooapps.material3.pullrefresh.pullRefresh
 import eu.bambooapps.material3.pullrefresh.rememberPullRefreshState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nl.hva.huecolors.R
@@ -64,16 +74,22 @@ import nl.hva.huecolors.ui.components.HueSubHeader
 import nl.hva.huecolors.ui.theme.HueColorsTheme
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
+fun LightsScreen(
+    navController: NavHostController,
+    viewModel: LightViewModel,
+    padding: PaddingValues
+) {
     val coroutineScope = rememberCoroutineScope()
     val lights by viewModel.lights.observeAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
+    val context = LocalContext.current
 
-    LaunchedEffect(lifecycleState) {
+    DisposableEffect(lifecycleState) {
         when (lifecycleState) {
             Lifecycle.State.RESUMED -> {
                 coroutineScope.launch {
@@ -83,12 +99,26 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
 
             else -> {}
         }
+
+        onDispose {}
     }
-    val isRefreshing by remember {
-        mutableStateOf(false)
+
+    DisposableEffect(Unit) {
+        val observer = Observer<String?> { message ->
+            message?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        viewModel.toastMessage.observe(lifecycleOwner, observer)
+
+        onDispose {
+            viewModel.toastMessage.removeObserver(observer)
+        }
     }
-    val state = rememberPullRefreshState(refreshing = isRefreshing, onRefresh = {
-        coroutineScope.launch {
+
+    val state = rememberPullRefreshState(refreshing = (lights is Resource.Loading), onRefresh = {
+        coroutineScope.launch(Dispatchers.IO) {
             viewModel.getLights()
         }
     })
@@ -97,6 +127,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .pullRefresh(state)
+            .padding(padding)
     ) {
         Column(
             modifier = Modifier
@@ -133,7 +164,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
                         }
                     },
                     setBrightness = { brightness, lightId ->
-                        coroutineScope.launch {
+                        coroutineScope.launch(Dispatchers.IO) {
                             viewModel.setBrightness(brightness, lightId)
                         }
                     }
@@ -144,7 +175,7 @@ fun LightsScreen(navController: NavHostController, viewModel: LightViewModel) {
         }
 
         PullRefreshIndicator(
-            refreshing = isRefreshing, state = state,
+            refreshing = (lights is Resource.Loading), state = state,
             modifier = Modifier
                 .align(Alignment.TopCenter)
         )
@@ -227,22 +258,45 @@ fun LightItem(
     var power by remember { mutableStateOf(light.power) }
     val lightColor = light.color?.let { Color(it) }
     var brightness by remember { mutableStateOf(light.brightness) }
-    val state by animateFloatAsState(if (!power) 0.1F else (brightness / 100).coerceAtLeast(0.15F), label = "")
+    val state by animateFloatAsState(
+        if (!power) 0.1F else (brightness / 100).coerceAtLeast(0.15F),
+        label = ""
+    )
+    val shake = remember { Animatable(0F) }
+    var trigger by remember { mutableStateOf(0L) }
 
     LaunchedEffect(brightness) {
-        delay(300L)
+        delay(200L)
         onBrightness(brightness, light.id)
+    }
+
+    LaunchedEffect(trigger) {
+        if (trigger != 0L) {
+            for (i in 0..5) {
+                when (i % 2) {
+                    0 -> shake.animateTo(3f, spring(stiffness = 100_000f))
+                    else -> shake.animateTo(-3f, spring(stiffness = 100_000f))
+                }
+            }
+
+            shake.animateTo(0F)
+        }
     }
 
     Card(colors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ),
-        modifier = Modifier.graphicsLayer { alpha = state },
+        modifier = Modifier
+            .offset(x = shake.value.roundToInt().dp, y = 0.dp)
+            .graphicsLayer { alpha = state },
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 24.dp
         ),
-        onClick = { onClick(light.v1Id) }
+        onClick = {
+            onClick(light.v1Id)
+            trigger = System.currentTimeMillis()
+        }
     ) {
         Box(Modifier.let {
             if (lightColor != null) {
@@ -306,6 +360,7 @@ fun LightItem(
                 Slider(
                     value = brightness,
                     modifier = Modifier.height(24.dp),
+                    enabled = power,
                     onValueChange = {
                         brightness = it
                     },
@@ -314,6 +369,10 @@ fun LightItem(
                         activeTrackColor = MaterialTheme.colorScheme.inverseSurface.copy(0.8F),
                         inactiveTrackColor = MaterialTheme.colorScheme.inverseOnSurface.copy(
                             0.3F
+                        ),
+                        disabledThumbColor = MaterialTheme.colorScheme.inverseSurface.copy(0.5F),
+                        disabledInactiveTrackColor = MaterialTheme.colorScheme.inverseSurface.copy(
+                            0.1F
                         )
                     ),
                     valueRange = 1F..100F
@@ -328,6 +387,6 @@ fun LightItem(
 @Composable
 fun LightsScreenPreview() {
     HueColorsTheme(darkTheme = true) {
-        LightsScreen(rememberNavController(), viewModel())
+        LightsScreen(rememberNavController(), viewModel(), PaddingValues())
     }
 }

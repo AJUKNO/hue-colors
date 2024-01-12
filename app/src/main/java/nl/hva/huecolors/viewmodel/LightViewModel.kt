@@ -379,31 +379,33 @@ class LightViewModel(application: Application) : AndroidViewModel(application) {
 //                    lightRepo.insertOrUpdateAll(updatedLights)
 //                }
 //            }
-            val roomLights = lightRepo.getHueLights()
+            withContext(Dispatchers.IO) {
+                val roomLights = lightRepo.getHueLights()
 
-            if (palette != null) {
-                val swatches = palette.swatches
+                if (palette != null) {
+                    val swatches = palette.swatches
 
-                for ((index, light) in roomLights.withIndex()) {
-                    val swatchIndex = index % swatches.size
+                    for ((index, light) in roomLights.withIndex()) {
+                        val swatchIndex = index % swatches.size
 
-                    val swatchColor = swatches[swatchIndex].rgb
+                        val swatchColor = swatches[swatchIndex].rgb
 
-                    shade.value?.data?.lights?.updateLight(
-                        id = ResourceId(light.id), parameters = LightUpdateParameters(
-                            color = ColorParameters(
-                                color = Color(swatchColor).toColormathColor()
-                            ), power = PowerParameters(
-                                on = true
+                        shade.value?.data?.lights?.updateLight(
+                            id = ResourceId(light.id), parameters = LightUpdateParameters(
+                                color = ColorParameters(
+                                    color = Color(swatchColor).toColormathColor()
+                                ), power = PowerParameters(
+                                    on = true
+                                )
                             )
                         )
-                    )
-                    Log.i(TAG, light.v1Id)
+                        Log.i(TAG, light.v1Id)
 
-                    lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
+                        lightRepo.insertOrUpdate(light.copy(color = swatchColor, power = true))
+                    }
+
+                    showToast(context.getString(R.string.applied_swatches, palette.swatches.size))
                 }
-                
-                showToast(context.getString(R.string.applied_swatches, palette.swatches.size))
             }
         } catch (error: Exception) {
             handleError(error)
