@@ -5,10 +5,11 @@ import android.content.Context
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +38,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,6 +59,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.Observer
 import androidx.navigation.NavHostController
 import androidx.palette.graphics.Palette
 import coil.compose.AsyncImage
@@ -69,14 +72,17 @@ import nl.hva.huecolors.data.Resource
 import nl.hva.huecolors.ui.components.HueButton
 import nl.hva.huecolors.ui.components.HueHeader
 import nl.hva.huecolors.ui.components.HueInfoCard
-import nl.hva.huecolors.ui.components.HueSubHeader
 import nl.hva.huecolors.utils.Utils
 import nl.hva.huecolors.viewmodel.LightViewModel
 
 @RequiresApi(Build.VERSION_CODES.S)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
+fun LibraryScreen(
+    navController: NavHostController,
+    viewModel: LightViewModel,
+    padding: PaddingValues
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
@@ -85,6 +91,7 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
     var showBottomSheet by rememberSaveable {
         mutableStateOf(false)
     }
+    val permissions = arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
     val sheetState = rememberModalBottomSheetState()
     var selectedImage by remember { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(
@@ -95,22 +102,20 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
             coroutineScope.launch {
                 viewModel.getImagesFromMedia(context)
             }
-        } else {
-            // TODO: HANDLE PERMISSION DENIAL
         }
     }
     val isGranted =
-        Utils.checkPermissions(context, arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+        Utils.checkPermissions(context, permissions)
 
     LaunchedEffect(lifecycleState) {
         when (lifecycleState) {
-            Lifecycle.State.RESUMED, Lifecycle.State.STARTED -> {
+            Lifecycle.State.RESUMED -> {
                 if (isGranted) {
                     coroutineScope.launch {
                         viewModel.getImagesFromMedia(context)
                     }
                 } else {
-                    launcher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES))
+                    launcher.launch(permissions)
                 }
             }
 
@@ -120,8 +125,23 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
         }
     }
 
+    DisposableEffect(Unit) {
+        val observer = Observer<String?> { message ->
+            message?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        viewModel.toastMessage.observe(lifecycleOwner, observer)
+
+        onDispose {
+            viewModel.clearImages()
+            viewModel.toastMessage.removeObserver(observer)
+        }
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().padding(padding)
     ) {
         LazyVerticalGrid(contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
@@ -130,12 +150,12 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
             content = {
                 item(span = { GridItemSpan(2) }) { }
                 item(span = { GridItemSpan(2) }) {
-                    HueHeader(text = "Library")
+                    HueHeader(text = stringResource(R.string.library))
                 }
                 item(span = { GridItemSpan(2) }) {
                     HueInfoCard(
-                        headline = "What is this?",
-                        body = "The Library lets you extract vibrant color palettes from your phone's images and applies them to Philips Hue lights, instantly transforming your space into a personalized and dynamic environment."
+                        headline = stringResource(id = R.string.what_is_this),
+                        body = stringResource(R.string.library_description)
                     )
                 }
                 when (images) {
@@ -180,7 +200,6 @@ fun LibraryScreen(navController: NavHostController, viewModel: LightViewModel) {
         showBottomSheet = false
     }, image = selectedImage, onApply = { palette ->
         coroutineScope.launch {
-            viewModel.initShade()
             viewModel.paletteToLights(palette)
             sheetState.hide()
         }.invokeOnCompletion {
@@ -242,7 +261,7 @@ fun PaletteDrawer(
                         )
                     }
                 }
-                HueButton(text = "Apply", onClick = { onApply(palette) })
+                HueButton(text = stringResource(R.string.apply), onClick = { onApply(palette) })
             }
         }
     }
